@@ -1,0 +1,36 @@
+name: iOS CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Build iOS app
+        working-directory: iosApp
+        run: |
+          xcodebuild build \
+            -project KaappiStudio.xcodeproj \
+            -scheme KaappiStudio \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Run tests
+        working-directory: iosApp
+        run: |
+          xcodebuild test \
+            -project KaappiStudio.xcodeproj \
+            -scheme KaappiStudio \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO

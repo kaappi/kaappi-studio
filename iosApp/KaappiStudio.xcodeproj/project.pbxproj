@@ -1,0 +1,534 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		171553BE9D1A0D2AD19AAB01 /* worker.js in Resources */ = {isa = PBXBuildFile; fileRef = 7E06171CBBDC049558C0D00D /* worker.js */; };
+		1964BEEAAB11D2B51C2F7BD4 /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = 9694C82341E77765A6AD381A /* index.html */; };
+		1DE35B6EE560AD6BE72E2F09 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9643D66D145E0AB75BEB9AB3 /* SettingsView.swift */; };
+		2C96CCABAD8719758653D4D4 /* ExamplesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6829DA3A5C679693AF73E567 /* ExamplesView.swift */; };
+		484F2DADC5EE0D488292E569 /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC5A5B304EDDB2A850D2B9B1 /* EditorViewModel.swift */; };
+		5123199BB4A20527D7372C30 /* kaappi.wasm in Resources */ = {isa = PBXBuildFile; fileRef = A7AEFE20825712ADCD9FC5F7 /* kaappi.wasm */; };
+		70E7A1CCE81C171A3B1F64DC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7364D3DD5B8E52F6495ED333 /* Assets.xcassets */; };
+		77E7BEDF82241FFF3484E40E /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00C5C1B12E67A29B2BEFE86E /* EditorView.swift */; };
+		A1B177BA331796B1CF5F6019 /* wasi-shim-bundle.mjs in Resources */ = {isa = PBXBuildFile; fileRef = 1BD7B921BDE49E4F7B20CCCC /* wasi-shim-bundle.mjs */; };
+		A225976D92B630C434DDECC6 /* runner.js in Resources */ = {isa = PBXBuildFile; fileRef = 0ACB6BA9544A9CA835948851 /* runner.js */; };
+		A369BF142A0E5C4FB1694DD6 /* bridge.js in Resources */ = {isa = PBXBuildFile; fileRef = 952DDE659A7A35BAE190B69F /* bridge.js */; };
+		B23A1A6021BB253EE4B76BE4 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A997EA1E22BD679B52E5C8BA /* SettingsViewModel.swift */; };
+		BAC693ACF0C9DFB559029E07 /* editor.js in Resources */ = {isa = PBXBuildFile; fileRef = 68B23C8AC4D5CDF328DC71F9 /* editor.js */; };
+		D0843B029C9591A26EEEE0B6 /* SchemeWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC89621B83CFC65BED1F0D97 /* SchemeWebView.swift */; };
+		D24102F20CAAF31D9770843A /* FileBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9892934816D3E5DCD210496 /* FileBrowserView.swift */; };
+		D6FE22211E04DBDBB53D14D8 /* styles.css in Resources */ = {isa = PBXBuildFile; fileRef = 31BF070AF308644B4A5DF25F /* styles.css */; };
+		D75DCD11725BFAAB38115E1F /* codemirror-bundle.mjs in Resources */ = {isa = PBXBuildFile; fileRef = 6124DC3C36E9215EE259F3D5 /* codemirror-bundle.mjs */; };
+		E19A6CEF799E7AAC43521B93 /* Examples.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BE3BAB6F3D5412230CE3C14 /* Examples.swift */; };
+		EFAE9AF99FE908280FF52A7B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A34AB77D984DA8228DA8F0C0 /* ContentView.swift */; };
+		F037672428FBC70BA17833F3 /* KaappiStudioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4400391A02F866A4C96A452 /* KaappiStudioApp.swift */; };
+		F07C98480949E0C5A5CD3967 /* FileBrowserViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 333B22CDAA1814DB88458506 /* FileBrowserViewModel.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		8DC499DDD581A77B045137BC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = ED6290648C76B86C0EE7F883 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1701618E35354AC690D8EA92;
+			remoteInfo = KaappiStudio;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		00C5C1B12E67A29B2BEFE86E /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
+		0ACB6BA9544A9CA835948851 /* runner.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = runner.js; sourceTree = "<group>"; };
+		1BD7B921BDE49E4F7B20CCCC /* wasi-shim-bundle.mjs */ = {isa = PBXFileReference; path = "wasi-shim-bundle.mjs"; sourceTree = "<group>"; };
+		31BF070AF308644B4A5DF25F /* styles.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = styles.css; sourceTree = "<group>"; };
+		333B22CDAA1814DB88458506 /* FileBrowserViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBrowserViewModel.swift; sourceTree = "<group>"; };
+		5C4ACC8F331E1E6D3C713256 /* KaappiStudio.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = KaappiStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6124DC3C36E9215EE259F3D5 /* codemirror-bundle.mjs */ = {isa = PBXFileReference; path = "codemirror-bundle.mjs"; sourceTree = "<group>"; };
+		6829DA3A5C679693AF73E567 /* ExamplesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamplesView.swift; sourceTree = "<group>"; };
+		68B23C8AC4D5CDF328DC71F9 /* editor.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = editor.js; sourceTree = "<group>"; };
+		6BE3BAB6F3D5412230CE3C14 /* Examples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Examples.swift; sourceTree = "<group>"; };
+		7364D3DD5B8E52F6495ED333 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7E06171CBBDC049558C0D00D /* worker.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = worker.js; sourceTree = "<group>"; };
+		806FF4EF81067F3F1C94DB21 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		952DDE659A7A35BAE190B69F /* bridge.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = bridge.js; sourceTree = "<group>"; };
+		9643D66D145E0AB75BEB9AB3 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		9694C82341E77765A6AD381A /* index.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = index.html; sourceTree = "<group>"; };
+		A0BDBEF6C7B736EF796767CF /* KaappiStudioTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KaappiStudioTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A34AB77D984DA8228DA8F0C0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A4400391A02F866A4C96A452 /* KaappiStudioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KaappiStudioApp.swift; sourceTree = "<group>"; };
+		A7AEFE20825712ADCD9FC5F7 /* kaappi.wasm */ = {isa = PBXFileReference; path = kaappi.wasm; sourceTree = "<group>"; };
+		A997EA1E22BD679B52E5C8BA /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		AC5A5B304EDDB2A850D2B9B1 /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModel.swift; sourceTree = "<group>"; };
+		C9892934816D3E5DCD210496 /* FileBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBrowserView.swift; sourceTree = "<group>"; };
+		FC89621B83CFC65BED1F0D97 /* SchemeWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemeWebView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		14124CD7A3AC13FC28D5CF76 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5C4ACC8F331E1E6D3C713256 /* KaappiStudio.app */,
+				A0BDBEF6C7B736EF796767CF /* KaappiStudioTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2BAB850482411D79BC322AF6 /* KaappiStudioTests */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = KaappiStudioTests;
+			sourceTree = "<group>";
+		};
+		39AFC393B8CFA5462F1FA656 = {
+			isa = PBXGroup;
+			children = (
+				DE8653982AE0E8580751F028 /* KaappiStudio */,
+				2BAB850482411D79BC322AF6 /* KaappiStudioTests */,
+				14124CD7A3AC13FC28D5CF76 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		3BA28A22BD6356357739E073 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A34AB77D984DA8228DA8F0C0 /* ContentView.swift */,
+				00C5C1B12E67A29B2BEFE86E /* EditorView.swift */,
+				6829DA3A5C679693AF73E567 /* ExamplesView.swift */,
+				C9892934816D3E5DCD210496 /* FileBrowserView.swift */,
+				9643D66D145E0AB75BEB9AB3 /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A2622FD9536F2F1C02A2811E /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				6BE3BAB6F3D5412230CE3C14 /* Examples.swift */,
+			);
+			path = Helpers;
+			sourceTree = "<group>";
+		};
+		B9AE8D798E09338681D89143 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				AC5A5B304EDDB2A850D2B9B1 /* EditorViewModel.swift */,
+				333B22CDAA1814DB88458506 /* FileBrowserViewModel.swift */,
+				A997EA1E22BD679B52E5C8BA /* SettingsViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		DE8653982AE0E8580751F028 /* KaappiStudio */ = {
+			isa = PBXGroup;
+			children = (
+				806FF4EF81067F3F1C94DB21 /* Info.plist */,
+				A4400391A02F866A4C96A452 /* KaappiStudioApp.swift */,
+				DE902A638F25B3F2C5B75097 /* Bridge */,
+				A2622FD9536F2F1C02A2811E /* Helpers */,
+				DEAFBEA010C733E008433A1E /* Resources */,
+				B9AE8D798E09338681D89143 /* ViewModels */,
+				3BA28A22BD6356357739E073 /* Views */,
+			);
+			path = KaappiStudio;
+			sourceTree = "<group>";
+		};
+		DE902A638F25B3F2C5B75097 /* Bridge */ = {
+			isa = PBXGroup;
+			children = (
+				FC89621B83CFC65BED1F0D97 /* SchemeWebView.swift */,
+			);
+			path = Bridge;
+			sourceTree = "<group>";
+		};
+		DEAFBEA010C733E008433A1E /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				7364D3DD5B8E52F6495ED333 /* Assets.xcassets */,
+				F160BB112634B8384FFE7AD8 /* webview */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		F160BB112634B8384FFE7AD8 /* webview */ = {
+			isa = PBXGroup;
+			children = (
+				952DDE659A7A35BAE190B69F /* bridge.js */,
+				6124DC3C36E9215EE259F3D5 /* codemirror-bundle.mjs */,
+				68B23C8AC4D5CDF328DC71F9 /* editor.js */,
+				9694C82341E77765A6AD381A /* index.html */,
+				A7AEFE20825712ADCD9FC5F7 /* kaappi.wasm */,
+				0ACB6BA9544A9CA835948851 /* runner.js */,
+				31BF070AF308644B4A5DF25F /* styles.css */,
+				1BD7B921BDE49E4F7B20CCCC /* wasi-shim-bundle.mjs */,
+				7E06171CBBDC049558C0D00D /* worker.js */,
+			);
+			path = webview;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1701618E35354AC690D8EA92 /* KaappiStudio */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A3DC64801A254B7F8A380E91 /* Build configuration list for PBXNativeTarget "KaappiStudio" */;
+			buildPhases = (
+				AB98E2F6940F49EB5BE34549 /* Sources */,
+				E644FF26387F838545DB5DB0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = KaappiStudio;
+			packageProductDependencies = (
+			);
+			productName = KaappiStudio;
+			productReference = 5C4ACC8F331E1E6D3C713256 /* KaappiStudio.app */;
+			productType = "com.apple.product-type.application";
+		};
+		AED28D22BF3A89F83A5D7E28 /* KaappiStudioTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3B5D0043CEF7B3CA088A13CA /* Build configuration list for PBXNativeTarget "KaappiStudioTests" */;
+			buildPhases = (
+				F4949F4D06B2CF3BA862990A /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B07478A7C344907C626D4CA1 /* PBXTargetDependency */,
+			);
+			name = KaappiStudioTests;
+			packageProductDependencies = (
+			);
+			productName = KaappiStudioTests;
+			productReference = A0BDBEF6C7B736EF796767CF /* KaappiStudioTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		ED6290648C76B86C0EE7F883 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					1701618E35354AC690D8EA92 = {
+						DevelopmentTeam = 9QBV46NATP;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = FFF971E9F4239F7E4486ADB8 /* Build configuration list for PBXProject "KaappiStudio" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 39AFC393B8CFA5462F1FA656;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 14124CD7A3AC13FC28D5CF76 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1701618E35354AC690D8EA92 /* KaappiStudio */,
+				AED28D22BF3A89F83A5D7E28 /* KaappiStudioTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E644FF26387F838545DB5DB0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				70E7A1CCE81C171A3B1F64DC /* Assets.xcassets in Resources */,
+				A369BF142A0E5C4FB1694DD6 /* bridge.js in Resources */,
+				D75DCD11725BFAAB38115E1F /* codemirror-bundle.mjs in Resources */,
+				BAC693ACF0C9DFB559029E07 /* editor.js in Resources */,
+				1964BEEAAB11D2B51C2F7BD4 /* index.html in Resources */,
+				5123199BB4A20527D7372C30 /* kaappi.wasm in Resources */,
+				A225976D92B630C434DDECC6 /* runner.js in Resources */,
+				D6FE22211E04DBDBB53D14D8 /* styles.css in Resources */,
+				A1B177BA331796B1CF5F6019 /* wasi-shim-bundle.mjs in Resources */,
+				171553BE9D1A0D2AD19AAB01 /* worker.js in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AB98E2F6940F49EB5BE34549 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EFAE9AF99FE908280FF52A7B /* ContentView.swift in Sources */,
+				77E7BEDF82241FFF3484E40E /* EditorView.swift in Sources */,
+				484F2DADC5EE0D488292E569 /* EditorViewModel.swift in Sources */,
+				E19A6CEF799E7AAC43521B93 /* Examples.swift in Sources */,
+				2C96CCABAD8719758653D4D4 /* ExamplesView.swift in Sources */,
+				D24102F20CAAF31D9770843A /* FileBrowserView.swift in Sources */,
+				F07C98480949E0C5A5CD3967 /* FileBrowserViewModel.swift in Sources */,
+				F037672428FBC70BA17833F3 /* KaappiStudioApp.swift in Sources */,
+				D0843B029C9591A26EEEE0B6 /* SchemeWebView.swift in Sources */,
+				1DE35B6EE560AD6BE72E2F09 /* SettingsView.swift in Sources */,
+				B23A1A6021BB253EE4B76BE4 /* SettingsViewModel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F4949F4D06B2CF3BA862990A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B07478A7C344907C626D4CA1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1701618E35354AC690D8EA92 /* KaappiStudio */;
+			targetProxy = 8DC499DDD581A77B045137BC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		094B021A51FCF746D5A4B847 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kaappi.studio.ios.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KaappiStudio.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/KaappiStudio";
+			};
+			name = Debug;
+		};
+		3CAF1E0397E2F3E27C877BF2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 9QBV46NATP;
+				INFOPLIST_FILE = KaappiStudio/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kaappi.studio.ios;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		440F756C4E12009582F37613 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		4C611CADC7594C787513D32D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kaappi.studio.ios.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KaappiStudio.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/KaappiStudio";
+			};
+			name = Release;
+		};
+		6F04BA544429BF0ED0739CAA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 9QBV46NATP;
+				INFOPLIST_FILE = KaappiStudio/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kaappi.studio.ios;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		88E12524677FDC1D0ED6E1BF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3B5D0043CEF7B3CA088A13CA /* Build configuration list for PBXNativeTarget "KaappiStudioTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				094B021A51FCF746D5A4B847 /* Debug */,
+				4C611CADC7594C787513D32D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A3DC64801A254B7F8A380E91 /* Build configuration list for PBXNativeTarget "KaappiStudio" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3CAF1E0397E2F3E27C877BF2 /* Debug */,
+				6F04BA544429BF0ED0739CAA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FFF971E9F4239F7E4486ADB8 /* Build configuration list for PBXProject "KaappiStudio" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				440F756C4E12009582F37613 /* Debug */,
+				88E12524677FDC1D0ED6E1BF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = ED6290648C76B86C0EE7F883 /* Project object */;
+}

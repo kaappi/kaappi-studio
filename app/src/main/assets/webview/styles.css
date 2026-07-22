@@ -1,0 +1,72 @@
+:root {
+  --kp-mono: "SF Mono", "Menlo", "Consolas", "DejaVu Sans Mono", monospace;
+  --kp-bg: #1A1410;
+  --kp-bg-editor: #1E1814;
+  --kp-fg: #F3E9DB;
+  --kp-fg-dim: #9C8A77;
+  --kp-accent: #4FC4B2;
+  --kp-border: #3A3028;
+  --kp-font-size: 14px;
+}
+
+.theme-light {
+  --kp-bg: #FAF6F0;
+  --kp-bg-editor: #FFFFFF;
+  --kp-fg: #1A1410;
+  --kp-fg-dim: #8A7A6A;
+  --kp-accent: #1E8A7A;
+  --kp-border: #E0D8CC;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--kp-bg);
+  color: var(--kp-fg);
+  font-family: var(--kp-mono);
+  font-size: var(--kp-font-size);
+}
+
+#editor-container {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: var(--kp-bg-editor);
+}
+
+#editor-container .cm-editor {
+  height: 100%;
+  background: transparent;
+}
+
+#editor-container .cm-editor .cm-scroller {
+  font-family: var(--kp-mono);
+  font-size: var(--kp-font-size);
+  line-height: 1.5;
+  padding: 8px;
+}
+
+#editor-container .cm-editor .cm-gutters {
+  background: transparent;
+  border-right: 1px solid var(--kp-border);
+  color: var(--kp-fg-dim);
+}
+
+#editor-container .cm-editor .cm-activeLine {
+  background: rgba(79, 196, 178, 0.06);
+}
+
+#editor-container .cm-editor .cm-activeLineGutter {
+  background: rgba(79, 196, 178, 0.06);
+}
+
+#editor-container .cm-editor.cm-focused {
+  outline: none;
+}
