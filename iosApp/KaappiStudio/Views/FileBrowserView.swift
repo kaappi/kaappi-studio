@@ -38,8 +38,13 @@ struct FileBrowserView: View {
                             }
                         }
                         .onDelete { indices in
-                            for index in indices {
-                                viewModel.deleteFile(path: viewModel.files[index].path)
+                            // Capture the paths up front: deleteFile refreshes
+                            // the list, so indexing into viewModel.files inside
+                            // the loop would re-index a mutated array and delete
+                            // the wrong files for a multi-row IndexSet.
+                            let paths = indices.map { viewModel.files[$0].path }
+                            for path in paths {
+                                viewModel.deleteFile(path: path)
                             }
                         }
                     }

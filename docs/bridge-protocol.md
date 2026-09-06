@@ -31,9 +31,9 @@ All messages are JSON: `{ "event": "<name>", ...payload }`.
 | Event | Platforms | Payload | Meaning |
 |-------|-----------|---------|---------|
 | `ready` | both | — | Editor finished initializing; enables Run/Save buttons and triggers pending-code injection. |
-| `runStart` | iOS | — | Execution began (sets `isRunning`). |
+| `runStart` | iOS | — | Execution began (sets `isRunning` and clears the previous run's stdout/stderr/elapsed, so a failing run cannot show stale output). |
 | `runComplete` | iOS | `stdout`, `stderr`, `elapsed` | Execution finished successfully (times in ms). |
-| `runError` | iOS | `error` | Execution failed. Also posted when `kaappi.wasm` or the WASI shim fails to load during init, and when Play is pressed while the runtime is unavailable (reusing the init-time error text). |
+| `runError` | iOS | `error` | Execution failed. Also posted when `kaappi.wasm` or the WASI shim fails to load during init, and when Play is pressed while the runtime is unavailable (reusing the init-time error text). The native handler clears stale stdout/elapsed, leaving only the error. |
 
 On iOS, `runComplete`'s `stdout`/`stderr` are the raw program output (decoded
 incrementally, no line buffering), so output without a trailing newline — e.g.
@@ -58,7 +58,10 @@ everything else — Android produces run results natively and posts no run event
 4. Native marks the editor ready (`EditorViewModel.onReady()` on both platforms),
    enabling the top-bar Run/Save buttons.
 5. If code is pending (an example or file was just selected), Android injects it via
-   `setCodeBase64` right after `ready` (`onReadyWithWebView`).
+   `setCodeBase64` right after `ready` (`onReadyWithWebView`); iOS `loadCode` calls
+   that arrive before `ready` are queued in the view model and applied by
+   `onReady()` the same way, since `window.kaappiAPI` does not exist until the
+   page's async init completes.
 
 ## Passing code safely
 
