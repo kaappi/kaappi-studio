@@ -33,13 +33,18 @@ All messages are JSON: `{ "event": "<name>", ...payload }`.
 | `ready` | both | — | Editor finished initializing; enables Run/Save buttons and triggers pending-code injection. |
 | `runStart` | iOS | — | Execution began (sets `isRunning`). |
 | `runComplete` | iOS | `stdout`, `stderr`, `elapsed` | Execution finished successfully (times in ms). |
-| `runError` | iOS | `error` | Execution failed. Also posted when `kaappi.wasm` or the WASI shim fails to load during init, and when Play is pressed while the runtime is unavailable. |
+| `runError` | iOS | `error` | Execution failed. Also posted when `kaappi.wasm` or the WASI shim fails to load during init, and when Play is pressed while the runtime is unavailable (reusing the init-time error text). |
 
 On iOS, `runComplete`'s `stdout`/`stderr` are the raw program output (decoded
 incrementally, no line buffering), so output without a trailing newline — e.g.
 `(display "42")` — is preserved exactly. `kaappi.wasm` is loaded with
-`XMLHttpRequest` (`responseType: "arraybuffer"`) because WebKit rejects `fetch()`
-for `file:` URLs.
+`XMLHttpRequest` (`responseType: "arraybuffer"`) because XHR's `file:` URL support
+has been more consistent across WebKit versions than `fetch()`'s; both currently
+require the `allowFileAccessFromFileURLs` preference in `SchemeWebView.swift`.
+
+The init-time `runError` (missing/invalid `kaappi.wasm`) posts on every cold
+start, not only on Play — that is intended: it is the only feedback that Scheme
+execution is unavailable.
 
 The Android `KaappiBridge` currently only inspects the raw JSON for `"ready"` and ignores
 everything else — Android produces run results natively and posts no run events.
