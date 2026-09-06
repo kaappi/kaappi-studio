@@ -1,7 +1,12 @@
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+
 package com.kaappi.studio.data
 
 import com.kaappi.studio.domain.SchemeFile
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
 import platform.Foundation.*
+import platform.posix.memcpy
 
 actual class FileRepository {
     private val dir: String by lazy {
@@ -21,30 +26,35 @@ actual class FileRepository {
         val contents = fm.contentsOfDirectoryAtPath(dir, error = null) ?: return emptyList()
         @Suppress("UNCHECKED_CAST")
         return (contents as List<String>)
-            .filter { it.hasSuffix(".scm") }
-            .mapNotNull { name ->
+            .filter { it.endsWith(".scm") }
+            .map { name ->
                 val path = "$dir/$name"
-                val content = NSString.stringWithContentsOfFile(path, encoding = NSUTF8StringEncoding, error = null) ?: return@mapNotNull null
-                val attrs = fm.attributesOfItemAtPath(path, error = null)
-                val modified = (attrs?.get(NSFileModificationDate) as? NSDate)
-                    ?.timeIntervalSince1970?.toLong()?.times(1000) ?: 0L
                 SchemeFile(
                     name = name.removeSuffix(".scm"),
                     path = path,
-                    content = content,
-                    lastModified = modified,
+                    // Contract: non-UTF-8 files stay visible with lossy content
+                    // instead of being dropped from the list.
+                    content = readTextLossy(path),
+                    lastModified = lastModified(path),
                 )
             }
             .sortedByDescending { it.lastModified }
     }
 
-    actual fun readFile(path: String): String =
-        NSString.stringWithContentsOfFile(path, encoding = NSUTF8StringEncoding, error = null) ?: ""
+    actual fun readFile(path: String): String {
+        // Contract: throw on missing/unreadable files — never return "" (see
+        // expect KDoc); invalid UTF-8 content decodes lossily, like Android.
+        val data = NSData.dataWithContentsOfFile(path)
+            ?: throw FileRepositoryException("Cannot read file at $path")
+        return decodeLossy(data)
+    }
 
     actual fun writeFile(name: String, content: String): SchemeFile {
-        val safeName = if (name.endsWith(".scm")) name else "$name.scm"
+        val safeName = SchemeFileNames.withExtension(SchemeFileNames.sanitize(name))
         val path = "$dir/$safeName"
-        (content as NSString).writeToFile(path, atomically = true, encoding = NSUTF8StringEncoding, error = null)
+        val written = dataFrom(content).writeToFile(path, atomically = true)
+        // Contract: never fabricate success.
+        if (!written) throw FileRepositoryException("Cannot save $safeName")
         return SchemeFile(
             name = safeName.removeSuffix(".scm"),
             path = path,
@@ -57,16 +67,50 @@ actual class FileRepository {
         NSFileManager.defaultManager.removeItemAtPath(path, error = null)
 
     actual fun renameFile(oldPath: String, newName: String): SchemeFile? {
-        val safeName = if (newName.endsWith(".scm")) newName else "$newName.scm"
+        val safeName = SchemeFileNames.withExtension(SchemeFileNames.sanitize(newName))
         val newPath = "$dir/$safeName"
+        // Contract: refuse to overwrite an existing destination.
+        if (NSFileManager.defaultManager.fileExistsAtPath(newPath)) return null
         val success = NSFileManager.defaultManager.moveItemAtPath(oldPath, toPath = newPath, error = null)
         if (!success) return null
-        val content = readFile(newPath)
         return SchemeFile(
             name = safeName.removeSuffix(".scm"),
             path = newPath,
-            content = content,
+            content = readTextLossy(newPath),
             lastModified = NSDate().timeIntervalSince1970.toLong() * 1000,
         )
     }
+
+    /** UTF-8 content, decoded lossily; "" only when the file cannot be read at all. */
+    private fun readTextLossy(path: String): String {
+        NSString.stringWithContentsOfFile(path, encoding = NSUTF8StringEncoding, error = null)
+            ?.let { return it }
+        val data = NSData.dataWithContentsOfFile(path) ?: return ""
+        return decodeLossy(data)
+    }
+
+    /** Malformed UTF-8 bytes become U+FFFD, matching java's lossy readText(). */
+    private fun decodeLossy(data: NSData): String {
+        val bytes = ByteArray(data.length.toInt())
+        if (bytes.isNotEmpty()) {
+            bytes.usePinned { pinned ->
+                memcpy(pinned.addressOf(0), data.bytes, data.length)
+            }
+        }
+        return bytes.decodeToString()
+    }
+
+    /** UTF-8 bytes of [text] as an NSData, without a String-to-NSString cast. */
+    private fun dataFrom(text: String): NSData {
+        val bytes = text.encodeToByteArray()
+        if (bytes.isEmpty()) return NSData.data()
+        return bytes.usePinned { pinned ->
+            NSData.create(bytes = pinned.addressOf(0), length = bytes.size.toULong())
+        }
+    }
+
+    private fun lastModified(path: String): Long =
+        (NSFileManager.defaultManager.attributesOfItemAtPath(path, error = null)
+            ?.get(NSFileModificationDate) as? NSDate)
+            ?.timeIntervalSince1970?.toLong()?.times(1000) ?: 0L
 }
