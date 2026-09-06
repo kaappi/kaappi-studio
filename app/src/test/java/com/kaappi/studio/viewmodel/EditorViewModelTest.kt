@@ -96,6 +96,19 @@ class EditorViewModelTest {
     }
 
     @Test
+    fun setCurrentFile_storesNameWithoutTheScmSuffix() {
+        // The title and save-dialog prefill re-append ".scm"; a raw "foo.scm"
+        // from the save/new-file dialogs must not become "foo.scm.scm" (#15).
+        val vm = EditorViewModel(newRunnerFactory())
+
+        vm.setCurrentFile("foo.scm")
+        assertEquals("foo", vm.currentFileName.value)
+
+        vm.setCurrentFile("foo")
+        assertEquals("foo", vm.currentFileName.value)
+    }
+
+    @Test
     fun runCode_completesWithResultAndStopsRunningIndicator() = runBlocking {
         val vm = EditorViewModel(newRunnerFactory())
 
