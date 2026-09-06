@@ -27,18 +27,26 @@ export async function createSchemeEditor({ parent, doc, isDark, onRun }) {
       { tag: [tags.meta, tags.operator], color: "#A06A20" },
     ]);
 
-    const theme = EditorView.theme({
+    const editorTheme = (dark) => EditorView.theme({
       "&": { backgroundColor: "transparent" },
-      ".cm-content": { caretColor: isDark ? "#F3E9DB" : "#1A1410" },
-    }, { dark: isDark });
+      ".cm-content": { caretColor: dark ? "#F3E9DB" : "#1A1410" },
+    }, { dark });
 
+    const highlightExtension = (dark) =>
+      syntaxHighlighting(dark ? darkHighlight : lightHighlight);
+
+    // Native pushes setTheme on every UI update (including repeats with the
+    // same value), so ignore no-op changes. codemirror-bundle.mjs does not
+    // export Compartment, so a real theme change re-creates the editor state;
+    // doc, selection and scroll position are preserved, undo history is not.
+    let currentDark = isDark;
     const view = new EditorView({
       state: EditorState.create({
         doc,
         extensions: [
           basicSetup,
-          theme,
-          syntaxHighlighting(isDark ? darkHighlight : lightHighlight),
+          editorTheme(currentDark),
+          highlightExtension(currentDark),
           StreamLanguage.define(scheme),
         ],
       }),
@@ -50,6 +58,23 @@ export async function createSchemeEditor({ parent, doc, isDark, onRun }) {
       setContent: (code) => view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: code },
       }),
+      setTheme: (dark) => {
+        if (dark === currentDark) return;
+        currentDark = dark;
+        const { doc, selection } = view.state;
+        const scrollTop = view.scrollDOM.scrollTop;
+        view.setState(EditorState.create({
+          doc,
+          selection,
+          extensions: [
+            basicSetup,
+            editorTheme(dark),
+            highlightExtension(dark),
+            StreamLanguage.define(scheme),
+          ],
+        }));
+        view.scrollDOM.scrollTop = scrollTop;
+      },
       destroy: () => view.destroy(),
     };
   } catch (e) {
@@ -68,6 +93,7 @@ export async function createSchemeEditor({ parent, doc, isDark, onRun }) {
     return {
       getContent: () => ta.value,
       setContent: (code) => { ta.value = code; },
+      setTheme: () => {},
       destroy: () => ta.remove(),
     };
   }

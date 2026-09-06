@@ -14,10 +14,10 @@ Both platforms speak the same two-channel design:
 | Method | Platforms | Purpose |
 |--------|-----------|---------|
 | `setCode(code)` | both | Replace editor content with a raw string. iOS escapes the string into a JS literal when calling. |
-| `setCodeBase64(b64)` | Android | Replace editor content from Base64 (avoids escaping issues on Android). |
+| `setCodeBase64(b64)` | Android | Replace editor content from Base64 (avoids escaping issues on Android); the JS side decodes the bytes as UTF-8. |
 | `getCode()` | both | Return editor content. Synchronous return consumed by `evaluateJavascript`'s callback (Android). |
 | `runCode()` | iOS only | Execute the current editor content against `kaappi.wasm` inside the WebView. |
-| `setTheme(theme)` | both | `"light"` or `"dark"`; switches the `theme-*` body class in `index.html`. |
+| `setTheme(theme)` | both | `"light"` or `"dark"`; switches the `theme-*` body class in `index.html` **and** reconfigures the CodeMirror caret color, dark flag, and syntax-highlight palette through `editor.js`'s `setTheme`. |
 | `setFontSize(px)` | both | Set the `--kp-font-size` CSS variable. |
 
 Android never calls `runCode()` (it runs Scheme natively via `SchemeRunner`); iOS never

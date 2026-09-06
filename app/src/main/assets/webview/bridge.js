@@ -29,7 +29,12 @@ window.kaappiAPI = {
   },
 
   setCodeBase64(b64) {
-    if (editor) editor.setContent(atob(b64));
+    if (!editor) return;
+    // atob() yields one Latin-1 character per byte, so UTF-8 multibyte
+    // sequences (λ, é, curly quotes) would become mojibake (issue #6).
+    // Decode the bytes explicitly as UTF-8 instead.
+    editor.setContent(
+      new TextDecoder().decode(Uint8Array.from(atob(b64), c => c.charCodeAt(0))));
   },
 
   getCode() {
@@ -38,6 +43,10 @@ window.kaappiAPI = {
 
   setTheme(themeName) {
     document.body.className = `theme-${themeName}`;
+    // Body class alone is not enough: CodeMirror's caret color, dark flag and
+    // highlight palette are configured in editor.js and need reconfiguring
+    // too (issue #7).
+    if (editor) editor.setTheme(themeName === "dark");
   },
 
   setFontSize(px) {

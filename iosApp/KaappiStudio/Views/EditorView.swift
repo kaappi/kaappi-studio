@@ -7,14 +7,17 @@ struct EditorView: View {
     let onSave: (String, String) throws -> SchemeFile
     @State private var showSaveDialog = false
     @State private var saveFileName = ""
+    // Observable invalidation for the .system theme: reading
+    // UITraitCollection.current directly never re-renders when the system
+    // appearance toggles, while this environment value does (issue #7).
+    @Environment(\.colorScheme) private var colorScheme
     @State private var saveError: String?
 
     private var isDark: Bool {
         switch settingsVM.themeMode {
         case .dark: return true
         case .light: return false
-        case .system:
-            return UITraitCollection.current.userInterfaceStyle == .dark
+        case .system: return colorScheme == .dark
         }
     }
 

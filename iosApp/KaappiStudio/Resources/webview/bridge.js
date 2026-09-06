@@ -156,6 +156,10 @@ window.kaappiAPI = {
 
   setTheme(themeName) {
     document.body.className = `theme-${themeName}`;
+    // Body class alone is not enough: CodeMirror's caret color, dark flag and
+    // highlight palette are configured in editor.js and need reconfiguring
+    // too (issue #7).
+    if (editor) editor.setTheme(themeName === "dark");
   },
 
   setFontSize(px) {
