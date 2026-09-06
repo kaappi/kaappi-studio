@@ -41,7 +41,7 @@ The native shell handles navigation, file management, settings, and theming. A W
 ### Android
 
 ```bash
-# Fetch the latest WASM binary (writes all three platform locations)
+# Fetch the latest WASM binary (writes both platform locations)
 bash scripts/fetch-wasm.sh
 
 # Build and run
@@ -56,14 +56,15 @@ Open `iosApp/KaappiStudio.xcodeproj` in Xcode and build for a simulator or devic
 
 The Scheme interpreter ships as a WebAssembly binary (`kaappi.wasm`, gitignored).
 `fetch-wasm.sh` downloads it from Kaappi releases, verifies it against the release's
-published `SHA256SUMS`, and writes it to all three locations the platforms read:
+published `SHA256SUMS` (the script fails hard if a release has no `SHA256SUMS` asset —
+all releases since v0.21.0 publish one), and writes it to the two locations the
+platforms read:
 
 ```bash
 bash scripts/fetch-wasm.sh            # latest
 bash scripts/fetch-wasm.sh 0.21.0     # specific version (a "v" prefix is accepted too)
 
 # - app/src/main/assets/kaappi.wasm                       (Android runtime, Chicory)
-# - app/src/main/assets/webview/kaappi.wasm               (Android webview assets)
 # - iosApp/KaappiStudio/Resources/webview/kaappi.wasm     (iOS WebView)
 ```
 
@@ -72,7 +73,6 @@ Or build it from source:
 ```bash
 cd ../kaappi && zig build wasm
 cp zig-out/bin/kaappi.wasm ../kaappi-studio/app/src/main/assets/kaappi.wasm
-cp zig-out/bin/kaappi.wasm ../kaappi-studio/app/src/main/assets/webview/kaappi.wasm
 cp zig-out/bin/kaappi.wasm ../kaappi-studio/iosApp/KaappiStudio/Resources/webview/kaappi.wasm
 ```
 

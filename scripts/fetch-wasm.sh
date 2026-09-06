@@ -15,13 +15,14 @@ else
   BASE_URL="https://github.com/$REPO/releases/download/v$VERSION"
 fi
 
-# All three locations the binary is read from:
+# The two locations the binary is read from:
 # - app/src/main/assets/kaappi.wasm                       Android runtime (SchemeRunner, assets root)
-# - app/src/main/assets/webview/kaappi.wasm               Android webview assets
 # - iosApp/KaappiStudio/Resources/webview/kaappi.wasm     iOS WebView (bridge.js)
+# Note: the Android webview assets (app/src/main/assets/webview/) do NOT need
+# the binary — the Android bridge.js is editor-only and Android executes via
+# Chicory from the assets root.
 DESTS=(
   "$ROOT/app/src/main/assets/kaappi.wasm"
-  "$ROOT/app/src/main/assets/webview/kaappi.wasm"
   "$ROOT/iosApp/KaappiStudio/Resources/webview/kaappi.wasm"
 )
 
@@ -29,11 +30,11 @@ TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 echo "Fetching kaappi.wasm from $BASE_URL/kaappi.wasm ..."
-curl -fSL -o "$TMP_DIR/kaappi.wasm" "$BASE_URL/kaappi.wasm"
+curl -fSL --retry 3 --retry-delay 2 -o "$TMP_DIR/kaappi.wasm" "$BASE_URL/kaappi.wasm"
 
 # Verify against the SHA256SUMS asset published with the release.
 echo "Fetching SHA256SUMS from $BASE_URL/SHA256SUMS ..."
-curl -fsSL -o "$TMP_DIR/SHA256SUMS" "$BASE_URL/SHA256SUMS"
+curl -fsSL --retry 3 --retry-delay 2 -o "$TMP_DIR/SHA256SUMS" "$BASE_URL/SHA256SUMS"
 if command -v sha256sum >/dev/null 2>&1; then
   grep ' kaappi.wasm$' "$TMP_DIR/SHA256SUMS" | (cd "$TMP_DIR" && sha256sum -c -)
 else

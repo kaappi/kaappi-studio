@@ -33,11 +33,12 @@ Versions are centralized in `gradle/libs.versions.toml` (version catalog). JDK 1
 ## Critical gotchas
 
 - **`kaappi.wasm` is gitignored and must be fetched:** `bash scripts/fetch-wasm.sh`
-  writes the binary to all three paths the platforms read: `app/src/main/assets/kaappi.wasm`
-  (Android assets root, read by `SchemeRunner`), `app/src/main/assets/webview/kaappi.wasm`,
-  and `iosApp/KaappiStudio/Resources/webview/kaappi.wasm`. Without all three, Android's Run
-  button fails at runtime and iOS silently produces no output. iOS CI never fetches it —
-  CI-built iOS artifacts cannot execute Scheme.
+  writes the binary to the two paths the platforms read: `app/src/main/assets/kaappi.wasm`
+  (Android assets root, read by `SchemeRunner`) and
+  `iosApp/KaappiStudio/Resources/webview/kaappi.wasm` (fetched by the iOS `bridge.js`).
+  The Android webview assets do not need it — Android executes via Chicory from the
+  assets root. Without it, Android's Run button fails at runtime and iOS produces no
+  output. iOS CI never fetches it — CI-built iOS artifacts cannot execute Scheme.
 - **Two copies of the webview assets, kept in sync manually:**
   `app/src/main/assets/webview/` and `iosApp/KaappiStudio/Resources/webview/` both
   contain `index.html`, `bridge.js`, `editor.js`, `styles.css`,
