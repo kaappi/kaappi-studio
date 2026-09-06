@@ -17,7 +17,7 @@ class EditorViewModel: ObservableObject {
     /// (`window.kaappiAPI` is not assigned until the async init completes).
     /// Mirrors the Android side's `setPendingCode`/`consumePendingCode`:
     /// the last requested load wins and is applied once the page is ready.
-    private var pendingLoad: String?
+    private(set) var pendingLoad: String?
 
     func onReady() {
         isReady = true
@@ -40,13 +40,18 @@ class EditorViewModel: ObservableObject {
     }
 
     func loadCode(_ code: String) {
-        guard let webView = webView else { return }
+        // The readiness guard comes first: before `makeUIView` has even
+        // assigned `webView`, a load would be dropped instead of queued. Once
+        // ready, `webView` always exists, so this covers both cases with the
+        // same queue — and makes the pending path testable without a
+        // WKWebView.
         guard isReady else {
             // Page has not finished init yet, so `window.kaappiAPI?.setCode`
             // would silently no-op. Queue the load; `onReady` applies it.
             pendingLoad = code
             return
         }
+        guard let webView = webView else { return }
         let escaped = code
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "'", with: "\\'")

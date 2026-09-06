@@ -16,7 +16,13 @@ struct SchemeWebView: UIViewRepresentable {
         // handler; remove it so the coordinator is released with the view
         // instead of living as long as the configuration object.
         uiView.configuration.userContentController.removeScriptMessageHandler(forName: "kaappi")
-        coordinator.editorViewModel?.webView = nil
+        guard let vm = coordinator.editorViewModel else { return }
+        // Mirror Android's readiness reset on WebView recreation (5d89219):
+        // the recreated webview loads a fresh page that is not ready until it
+        // posts `ready`, so Run/Save disable again and loadCode queues instead
+        // of targeting a page whose window.kaappiAPI does not exist yet.
+        vm.isReady = false
+        vm.webView = nil
     }
 
     func makeUIView(context: Context) -> WKWebView {
@@ -65,8 +71,11 @@ struct SchemeWebView: UIViewRepresentable {
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let event = json["event"] as? String else { return }
 
-            guard let vm = editorViewModel else { return }
             Task { @MainActor in
+                // Resolved on the main actor: WebKit happens to deliver script
+                // messages on the main thread today, but reading the view
+                // model's state here is only sound once inside the Task.
+                guard let vm = editorViewModel else { return }
                 switch event {
                 case "ready":
                     vm.onReady()
