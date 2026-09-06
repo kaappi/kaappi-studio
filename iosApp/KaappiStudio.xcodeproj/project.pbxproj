@@ -7,24 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		171553BE9D1A0D2AD19AAB01 /* worker.js in Resources */ = {isa = PBXBuildFile; fileRef = 7E06171CBBDC049558C0D00D /* worker.js */; };
-		1964BEEAAB11D2B51C2F7BD4 /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = 9694C82341E77765A6AD381A /* index.html */; };
 		1DE35B6EE560AD6BE72E2F09 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9643D66D145E0AB75BEB9AB3 /* SettingsView.swift */; };
 		2C96CCABAD8719758653D4D4 /* ExamplesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6829DA3A5C679693AF73E567 /* ExamplesView.swift */; };
 		484F2DADC5EE0D488292E569 /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC5A5B304EDDB2A850D2B9B1 /* EditorViewModel.swift */; };
 		70E7A1CCE81C171A3B1F64DC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7364D3DD5B8E52F6495ED333 /* Assets.xcassets */; };
 		77E7BEDF82241FFF3484E40E /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00C5C1B12E67A29B2BEFE86E /* EditorView.swift */; };
 		7C7486C2BF1F75E7F70059A1 /* WebViewAssetsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D552EDDA4AB6CC55BEC2E1 /* WebViewAssetsTests.swift */; };
-		A1B177BA331796B1CF5F6019 /* wasi-shim-bundle.mjs in Resources */ = {isa = PBXBuildFile; fileRef = 1BD7B921BDE49E4F7B20CCCC /* wasi-shim-bundle.mjs */; };
-		A225976D92B630C434DDECC6 /* runner.js in Resources */ = {isa = PBXBuildFile; fileRef = 0ACB6BA9544A9CA835948851 /* runner.js */; };
-		A369BF142A0E5C4FB1694DD6 /* bridge.js in Resources */ = {isa = PBXBuildFile; fileRef = 952DDE659A7A35BAE190B69F /* bridge.js */; };
 		B01630B9990330BFE053C2BC /* ExamplesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 171E753B95CE9D02B6953093 /* ExamplesTests.swift */; };
 		B23A1A6021BB253EE4B76BE4 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A997EA1E22BD679B52E5C8BA /* SettingsViewModel.swift */; };
-		BAC693ACF0C9DFB559029E07 /* editor.js in Resources */ = {isa = PBXBuildFile; fileRef = 68B23C8AC4D5CDF328DC71F9 /* editor.js */; };
 		D0843B029C9591A26EEEE0B6 /* SchemeWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC89621B83CFC65BED1F0D97 /* SchemeWebView.swift */; };
 		D24102F20CAAF31D9770843A /* FileBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9892934816D3E5DCD210496 /* FileBrowserView.swift */; };
-		D6FE22211E04DBDBB53D14D8 /* styles.css in Resources */ = {isa = PBXBuildFile; fileRef = 31BF070AF308644B4A5DF25F /* styles.css */; };
-		D75DCD11725BFAAB38115E1F /* codemirror-bundle.mjs in Resources */ = {isa = PBXBuildFile; fileRef = 6124DC3C36E9215EE259F3D5 /* codemirror-bundle.mjs */; };
+		DF768A79D59C7EF059B7C2E6 /* webview in Resources */ = {isa = PBXBuildFile; fileRef = F11D7A5CA03B2220EED06EB4 /* webview */; };
 		E19A6CEF799E7AAC43521B93 /* Examples.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BE3BAB6F3D5412230CE3C14 /* Examples.swift */; };
 		EFAE9AF99FE908280FF52A7B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A34AB77D984DA8228DA8F0C0 /* ContentView.swift */; };
 		F037672428FBC70BA17833F3 /* KaappiStudioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4400391A02F866A4C96A452 /* KaappiStudioApp.swift */; };
@@ -43,29 +36,22 @@
 
 /* Begin PBXFileReference section */
 		00C5C1B12E67A29B2BEFE86E /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
-		0ACB6BA9544A9CA835948851 /* runner.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = runner.js; sourceTree = "<group>"; };
 		171E753B95CE9D02B6953093 /* ExamplesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamplesTests.swift; sourceTree = "<group>"; };
-		1BD7B921BDE49E4F7B20CCCC /* wasi-shim-bundle.mjs */ = {isa = PBXFileReference; path = "wasi-shim-bundle.mjs"; sourceTree = "<group>"; };
-		31BF070AF308644B4A5DF25F /* styles.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = styles.css; sourceTree = "<group>"; };
 		333B22CDAA1814DB88458506 /* FileBrowserViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBrowserViewModel.swift; sourceTree = "<group>"; };
 		49D552EDDA4AB6CC55BEC2E1 /* WebViewAssetsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewAssetsTests.swift; sourceTree = "<group>"; };
 		5C4ACC8F331E1E6D3C713256 /* KaappiStudio.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = KaappiStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		6124DC3C36E9215EE259F3D5 /* codemirror-bundle.mjs */ = {isa = PBXFileReference; path = "codemirror-bundle.mjs"; sourceTree = "<group>"; };
 		6829DA3A5C679693AF73E567 /* ExamplesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamplesView.swift; sourceTree = "<group>"; };
-		68B23C8AC4D5CDF328DC71F9 /* editor.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = editor.js; sourceTree = "<group>"; };
 		6BE3BAB6F3D5412230CE3C14 /* Examples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Examples.swift; sourceTree = "<group>"; };
 		7364D3DD5B8E52F6495ED333 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		7E06171CBBDC049558C0D00D /* worker.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = worker.js; sourceTree = "<group>"; };
 		806FF4EF81067F3F1C94DB21 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		952DDE659A7A35BAE190B69F /* bridge.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = bridge.js; sourceTree = "<group>"; };
 		9643D66D145E0AB75BEB9AB3 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		9694C82341E77765A6AD381A /* index.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = index.html; sourceTree = "<group>"; };
 		A0BDBEF6C7B736EF796767CF /* KaappiStudioTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KaappiStudioTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A34AB77D984DA8228DA8F0C0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A4400391A02F866A4C96A452 /* KaappiStudioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KaappiStudioApp.swift; sourceTree = "<group>"; };
 		A997EA1E22BD679B52E5C8BA /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		AC5A5B304EDDB2A850D2B9B1 /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModel.swift; sourceTree = "<group>"; };
 		C9892934816D3E5DCD210496 /* FileBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBrowserView.swift; sourceTree = "<group>"; };
+		F11D7A5CA03B2220EED06EB4 /* webview */ = {isa = PBXFileReference; lastKnownFileType = folder; name = webview; path = KaappiStudio/Resources/webview; sourceTree = SOURCE_ROOT; };
 		FC89621B83CFC65BED1F0D97 /* SchemeWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemeWebView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -91,6 +77,7 @@
 		39AFC393B8CFA5462F1FA656 = {
 			isa = PBXGroup;
 			children = (
+				F11D7A5CA03B2220EED06EB4 /* webview */,
 				DE8653982AE0E8580751F028 /* KaappiStudio */,
 				2BAB850482411D79BC322AF6 /* KaappiStudioTests */,
 				14124CD7A3AC13FC28D5CF76 /* Products */,
@@ -153,24 +140,8 @@
 			isa = PBXGroup;
 			children = (
 				7364D3DD5B8E52F6495ED333 /* Assets.xcassets */,
-				F160BB112634B8384FFE7AD8 /* webview */,
 			);
 			path = Resources;
-			sourceTree = "<group>";
-		};
-		F160BB112634B8384FFE7AD8 /* webview */ = {
-			isa = PBXGroup;
-			children = (
-				952DDE659A7A35BAE190B69F /* bridge.js */,
-				6124DC3C36E9215EE259F3D5 /* codemirror-bundle.mjs */,
-				68B23C8AC4D5CDF328DC71F9 /* editor.js */,
-				9694C82341E77765A6AD381A /* index.html */,
-				0ACB6BA9544A9CA835948851 /* runner.js */,
-				31BF070AF308644B4A5DF25F /* styles.css */,
-				1BD7B921BDE49E4F7B20CCCC /* wasi-shim-bundle.mjs */,
-				7E06171CBBDC049558C0D00D /* worker.js */,
-			);
-			path = webview;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -253,14 +224,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				70E7A1CCE81C171A3B1F64DC /* Assets.xcassets in Resources */,
-				A369BF142A0E5C4FB1694DD6 /* bridge.js in Resources */,
-				D75DCD11725BFAAB38115E1F /* codemirror-bundle.mjs in Resources */,
-				BAC693ACF0C9DFB559029E07 /* editor.js in Resources */,
-				1964BEEAAB11D2B51C2F7BD4 /* index.html in Resources */,
-				A225976D92B630C434DDECC6 /* runner.js in Resources */,
-				D6FE22211E04DBDBB53D14D8 /* styles.css in Resources */,
-				A1B177BA331796B1CF5F6019 /* wasi-shim-bundle.mjs in Resources */,
-				171553BE9D1A0D2AD19AAB01 /* worker.js in Resources */,
+				DF768A79D59C7EF059B7C2E6 /* webview in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

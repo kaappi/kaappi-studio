@@ -16,13 +16,6 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app
 
-      - name: Create placeholder kaappi.wasm
-        working-directory: iosApp
-        run: mkdir -p KaappiStudio/Resources/webview && touch KaappiStudio/Resources/webview/kaappi.wasm
-        # The real binary is gitignored and CI intentionally never fetches it:
-        # CI proves buildability only (see AGENTS.md), and the app surfaces a
-        # visible runError when the bundled wasm is absent or invalid.
-
       - name: Build iOS app
         working-directory: iosApp
         run: |

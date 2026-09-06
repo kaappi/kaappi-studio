@@ -11,10 +11,10 @@ final class ExamplesTests: XCTestCase {
 
     func testExampleIdsAreUnique() {
         let ids = schemeExamples.map(\.id)
-        let counts = Dictionary(grouping: ids, by: { $0 }).filter { $0.value.count > 1 }
+        let duplicates = Dictionary(grouping: ids, by: { $0 }).filter { $0.value.count > 1 }
         XCTAssertTrue(
-            Set(ids).count == ids.count,
-            "Duplicate example ids found: \(counts.keys.sorted().joined(separator: ", "))"
+            duplicates.isEmpty,
+            "Duplicate example ids found: \(duplicates.keys.sorted().joined(separator: ", "))"
         )
     }
 
