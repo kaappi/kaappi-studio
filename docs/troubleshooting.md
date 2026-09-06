@@ -12,22 +12,18 @@ Known gotchas in this repository. If you hit something not listed here, consider
   `Failed to load WASM` (the fetch in `bridge.js` failed — also happens in **iOS CI**
   builds, which never fetch the binary).
 
-**Cause:** `kaappi.wasm` is gitignored, and `scripts/fetch-wasm.sh` writes only to
-`app/src/main/assets/webview/kaappi.wasm`, while:
+**Cause:** `kaappi.wasm` is gitignored, so it is not in the repo. It must be fetched
+with `scripts/fetch-wasm.sh`, which writes all three copies:
 
-- the Android runtime reads `app/src/main/assets/kaappi.wasm` (assets root), and
-- the iOS WebView fetches `iosApp/KaappiStudio/Resources/webview/kaappi.wasm`.
+- the Android runtime reads `app/src/main/assets/kaappi.wasm` (assets root),
+- the iOS WebView fetches `iosApp/KaappiStudio/Resources/webview/kaappi.wasm`, and
+- the Android webview assets hold `app/src/main/assets/webview/kaappi.wasm`.
 
 **Fix:**
 
 ```bash
 bash scripts/fetch-wasm.sh
-cp app/src/main/assets/webview/kaappi.wasm app/src/main/assets/kaappi.wasm
-cp app/src/main/assets/webview/kaappi.wasm iosApp/KaappiStudio/Resources/webview/kaappi.wasm
 ```
-
-(Upstream candidates: point the script at the Android assets root, or make `SchemeRunner`
-read the `webview/` copy, and have iOS CI fetch the binary.)
 
 ## iOS build doesn't include new Swift files
 

@@ -37,24 +37,16 @@ the repo**, so fetch it after cloning:
 
 ```bash
 bash scripts/fetch-wasm.sh          # latest release
-bash scripts/fetch-wasm.sh 0.21.0   # a specific version
+bash scripts/fetch-wasm.sh 0.21.0   # a specific version (a "v" prefix is accepted too)
 ```
 
-**Known quirk:** the script writes to `app/src/main/assets/webview/kaappi.wasm`, but the
-Android runtime (`SchemeRunner`) reads the binary from the assets **root**,
-`app/src/main/assets/kaappi.wasm`. Until the script is updated, copy it there too —
-otherwise Android builds fine but every Run fails with a runtime error:
+The script verifies the download against the release's published `SHA256SUMS` and writes
+the binary to all three locations the platforms read:
 
-```bash
-cp app/src/main/assets/webview/kaappi.wasm app/src/main/assets/kaappi.wasm
-```
-
-For iOS, place a copy where the WebView can fetch it (this path is also gitignored;
-`fetch-wasm.sh` does **not** write here):
-
-```bash
-cp app/src/main/assets/webview/kaappi.wasm iosApp/KaappiStudio/Resources/webview/kaappi.wasm
-```
+- `app/src/main/assets/kaappi.wasm` — the Android runtime (`SchemeRunner` reads the
+  assets root)
+- `app/src/main/assets/webview/kaappi.wasm` — the Android webview assets
+- `iosApp/KaappiStudio/Resources/webview/kaappi.wasm` — the iOS WebView (`bridge.js`)
 
 See [Troubleshooting](troubleshooting.md#missing-or-misplaced-wasm-binary) for the
 failure symptoms when a copy is missing.
@@ -73,7 +65,6 @@ cd ../kaappi && zig build wasm
 
 ```bash
 bash scripts/fetch-wasm.sh
-cp app/src/main/assets/webview/kaappi.wasm app/src/main/assets/kaappi.wasm
 
 # Debug APK
 ./gradlew assembleDebug
@@ -93,7 +84,7 @@ The Xcode project is generated from [`iosApp/project.yml`](../iosApp/project.yml
 A pre-generated `KaappiStudio.xcodeproj` is committed, so you can open it directly:
 
 ```bash
-cp app/src/main/assets/webview/kaappi.wasm iosApp/KaappiStudio/Resources/webview/kaappi.wasm
+bash scripts/fetch-wasm.sh
 open iosApp/KaappiStudio.xcodeproj
 ```
 
