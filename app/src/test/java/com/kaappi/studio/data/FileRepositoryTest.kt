@@ -59,7 +59,8 @@ class FileRepositoryTest {
         assertTrue(
             "nothing may be written outside the schemes directory",
             dir.parentFile!!.walkTopDown().filter { it.isFile }.toList().isEmpty(),
-        )    }
+        )
+    }
 
     @Test
     fun writeFile_overwritesAndLeavesNoTempFilesBehind() {
@@ -132,6 +133,30 @@ class FileRepositoryTest {
         assertEquals("c", renamed?.name)
         assertFalse(File(dir, "a.scm").exists())
         assertEquals("AAA", File(dir, "c.scm").readText())
+    }
+
+    @Test
+    fun renameFile_toItsOwnNameIsANoOpSuccess() {
+        val (repo, dir) = newRepository()
+        val a = repo.writeFile("a", "AAA")
+
+        val renamed = repo.renameFile(a.path, "a")
+
+        assertEquals("the file must survive unchanged", "AAA", File(dir, "a.scm").readText())
+        assertEquals("a", renamed?.name)
+    }
+
+    @Test
+    fun repositoryInit_sweepsStaleTempFilesButKeepsRealFiles() {
+        val filesDir = tmp.newFolder()
+        val dir = File(filesDir, "schemes").apply { mkdirs() }
+        File(dir, "crash.scm.tmp").writeText("partial write from a crashed save")
+        File(dir, "keep.scm").writeText("real")
+
+        FileRepository(contextWithFilesDir(filesDir))
+
+        assertFalse("stale atomic-write temp files must be swept at init", File(dir, "crash.scm.tmp").exists())
+        assertEquals("real files must survive the sweep", "real", File(dir, "keep.scm").readText())
     }
 
     @Test
