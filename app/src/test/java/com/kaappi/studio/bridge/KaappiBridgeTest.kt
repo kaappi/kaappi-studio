@@ -98,4 +98,18 @@ class KaappiBridgeTest {
 
         assertEquals(1, listener.readyCount)
     }
+
+    @Test
+    fun decodeCodeResult_jsonString_isDecoded() {
+        assertEquals("(display \"hi\")", decodeCodeResult("\"(display \\\"hi\\\")\""))
+    }
+
+    @Test
+    fun decodeCodeResult_literalNullJsResult_returnsNull() {
+        // evaluateJavascript reports a JS `null` (kaappiAPI not loaded yet)
+        // as the four-character string "null" — never content.
+        assertNull(decodeCodeResult("null"))
+        assertNull(decodeCodeResult("\"null\""))
+        assertNull(decodeCodeResult(null))
+    }
 }

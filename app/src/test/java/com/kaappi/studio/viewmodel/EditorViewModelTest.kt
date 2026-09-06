@@ -226,4 +226,27 @@ class EditorViewModelTest {
         assertFalse(vm.isRunning.value)
         assertTrue(result.stderr.isEmpty())
     }
+
+    @Test
+    fun onWebViewReset_clearsReadinessUntilTheNextReadyEvent() {
+        val vm = EditorViewModel(newRunnerFactory())
+        vm.onReady()
+        assertTrue(vm.isReady.value)
+
+        vm.onWebViewReset()
+        assertFalse(vm.isReady.value)
+
+        vm.onReady()
+        assertTrue(vm.isReady.value)
+    }
+
+    @Test
+    fun draft_isKeptApartFromPendingCode_andConsumedOnce() {
+        val vm = EditorViewModel(newRunnerFactory())
+
+        vm.saveDraft("(display 1)")
+        assertNull(vm.pendingCode.value)
+        assertEquals("(display 1)", vm.consumeDraft())
+        assertNull(vm.consumeDraft())
+    }
 }
