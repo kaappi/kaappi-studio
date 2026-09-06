@@ -100,6 +100,17 @@ Use the same `id`, `title`, `description`, category, and code in both. Categorie
 fixed: Getting Started, Functions, Data Structures, Control Flow, Advanced. After adding
 an iOS file (if new), regenerate the Xcode project.
 
+A CI check diffs the two lists on every push and pull request — run it locally with:
+
+```bash
+python3 scripts/check-examples-parity.py
+```
+
+Keep the workload small too: iOS runs Scheme inside the WebView's main thread, so huge
+iteration counts or very long programs freeze the UI (see
+[architecture.md](architecture.md)). `ExampleRepositoryTest` enforces a per-example
+code-size budget on the Kotlin side.
+
 ### Update the Scheme engine (`kaappi.wasm`)
 
 ```bash

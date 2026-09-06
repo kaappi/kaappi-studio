@@ -234,17 +234,8 @@ object ExampleRepository {
                 |      acc
                 |      (loop (- n 1) (+ acc 1))))
                 |
-                |(display "1,000,000 iterations: ")
-                |(display (loop 1000000 0))
-                |(newline)
-                |
-                |(define (ack m n)
-                |  (cond ((= m 0) (+ n 1))
-                |        ((= n 0) (ack (- m 1) 1))
-                |        (else (ack (- m 1) (ack m (- n 1))))))
-                |
-                |(display "ack(3,7) = ")
-                |(display (ack 3 7))
+                |(display "100,000 iterations: ")
+                |(display (loop 100000 0))
                 |(newline)
             """.trimMargin(),
         ),

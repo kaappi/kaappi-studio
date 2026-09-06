@@ -16,6 +16,10 @@ enum ExampleCategory: String, CaseIterable {
     case advanced = "Advanced"
 }
 
+// Keep this list in sync with
+// shared/src/commonMain/kotlin/com/kaappi/studio/data/ExampleRepository.kt —
+// scripts/check-examples-parity.py (run in Android CI) verifies that id,
+// title, description, category and code match on both platforms.
 let schemeExamples: [SchemeExample] = [
     SchemeExample(
         id: "hello", title: "Hello World",
@@ -51,6 +55,12 @@ let schemeExamples: [SchemeExample] = [
         (display " v0.")
         (display version)
         (display ".0!")
+        (newline)
+
+        (define pi 3.141592653589793)
+        (define radius 5)
+        (display "Area of circle: ")
+        (display (* pi radius radius))
         (newline)
         """
     ),
@@ -113,6 +123,10 @@ let schemeExamples: [SchemeExample] = [
         (display "Sum: ")
         (display (fold + 0 nums))
         (newline)
+
+        (display "Product: ")
+        (display (fold * 1 nums))
+        (newline)
         """
     ),
     SchemeExample(
@@ -127,6 +141,55 @@ let schemeExamples: [SchemeExample] = [
         (display "Rest: ") (display (cdr fruits)) (newline)
         (display "Length: ") (display (length fruits)) (newline)
         (display "Reversed: ") (display (reverse fruits)) (newline)
+
+        (display "With grape: ")
+        (display (cons "grape" fruits))
+        (newline)
+        """
+    ),
+    SchemeExample(
+        id: "assoc", title: "Association Lists",
+        description: "Key-value pairs with alists",
+        category: .dataStructures,
+        code: """
+        (define contacts
+          '(("Alice" . "alice@example.com")
+            ("Bob" . "bob@example.com")
+            ("Carol" . "carol@example.com")))
+
+        (display "Alice's email: ")
+        (display (cdr (assoc "Alice" contacts)))
+        (newline)
+
+        (define updated
+          (cons '("Dave" . "dave@example.com") contacts))
+
+        (display "All contacts:") (newline)
+        (for-each
+          (lambda (entry)
+            (display "  ")
+            (display (car entry))
+            (display ": ")
+            (display (cdr entry))
+            (newline))
+          updated)
+        """
+    ),
+    SchemeExample(
+        id: "vectors", title: "Vectors",
+        description: "Fixed-size indexed collections",
+        category: .dataStructures,
+        code: """
+        (define v (vector 10 20 30 40 50))
+
+        (display "Vector: ") (display v) (newline)
+        (display "Element 2: ") (display (vector-ref v 2)) (newline)
+        (display "Length: ") (display (vector-length v)) (newline)
+
+        (vector-set! v 2 99)
+        (display "After set!: ") (display v) (newline)
+
+        (display "As list: ") (display (vector->list v)) (newline)
         """
     ),
     SchemeExample(
@@ -146,6 +209,16 @@ let schemeExamples: [SchemeExample] = [
             (display n) (display " is ")
             (display (classify n)) (newline))
           '(-3 0 4 7))
+
+        (define (day-type day)
+          (case day
+            ((monday tuesday wednesday thursday friday) "weekday")
+            ((saturday sunday) "weekend")
+            (else "unknown")))
+
+        (display "Saturday is a ")
+        (display (day-type 'saturday))
+        (newline)
         """
     ),
     SchemeExample(
@@ -158,8 +231,25 @@ let schemeExamples: [SchemeExample] = [
               acc
               (loop (- n 1) (+ acc 1))))
 
-        (display "1,000,000 iterations: ")
-        (display (loop 1000000 0))
+        (display "100,000 iterations: ")
+        (display (loop 100000 0))
+        (newline)
+        """
+    ),
+    SchemeExample(
+        id: "callcc", title: "Continuations",
+        description: "call/cc for non-local exit",
+        category: .controlFlow,
+        code: """
+        (display "Early exit: ")
+        (display
+          (call-with-current-continuation
+            (lambda (exit)
+              (for-each (lambda (x)
+                          (if (negative? x)
+                              (exit x)))
+                        '(54 0 37 -3 245 19))
+              #t)))
         (newline)
         """
     ),
@@ -182,6 +272,18 @@ let schemeExamples: [SchemeExample] = [
         (swap! x y)
         (display "After:  x=") (display x)
         (display " y=") (display y) (newline)
+
+        (define-syntax my-cond
+          (syntax-rules (else)
+            ((_ (else e ...)) (begin e ...))
+            ((_ (test e ...) rest ...)
+             (if test (begin e ...) (my-cond rest ...)))))
+
+        (display (my-cond
+          ((> 1 2) "no")
+          ((< 1 2) "yes")
+          (else "maybe")))
+        (newline)
         """
     ),
     SchemeExample(
@@ -194,20 +296,60 @@ let schemeExamples: [SchemeExample] = [
           (export circle-area rect-area describe)
           (begin
             (define pi 3.141592653589793)
-            (define (circle-area r) (* pi r r))
-            (define (rect-area w h) (* w h))
+
+            (define (circle-area r)
+              (* pi r r))
+
+            (define (rect-area w h)
+              (* w h))
+
             (define (describe shape . args)
-              (display shape) (display ": ")
+              (display shape)
+              (display ": ")
               (display
                 (cond
-                  ((equal? shape "circle") (circle-area (car args)))
-                  ((equal? shape "rect") (rect-area (car args) (cadr args)))
+                  ((equal? shape "circle")
+                   (circle-area (car args)))
+                  ((equal? shape "rect")
+                   (rect-area (car args) (cadr args)))
                   (else "unknown")))
               (newline))))
 
         (import (geometry shapes))
         (describe "circle" 5)
         (describe "rect" 3 4)
+        """
+    ),
+    SchemeExample(
+        id: "sorting", title: "Sorting",
+        description: "Merge sort implementation",
+        category: .advanced,
+        code: """
+        (define (merge-sort lst)
+          (if (or (null? lst) (null? (cdr lst)))
+              lst
+              (let-values (((left right) (split lst)))
+                (merge (merge-sort left)
+                       (merge-sort right)))))
+
+        (define (split lst)
+          (let loop ((l lst) (a '()) (b '()))
+            (if (null? l)
+                (values (reverse a) (reverse b))
+                (loop (cdr l) b (cons (car l) a)))))
+
+        (define (merge a b)
+          (cond
+            ((null? a) b)
+            ((null? b) a)
+            ((<= (car a) (car b))
+             (cons (car a) (merge (cdr a) b)))
+            (else
+             (cons (car b) (merge a (cdr b))))))
+
+        (display "Sorted: ")
+        (display (merge-sort '(38 27 43 3 9 82 10)))
+        (newline)
         """
     ),
 ]
