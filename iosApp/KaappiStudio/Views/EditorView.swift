@@ -10,15 +10,14 @@ struct EditorView: View {
     // Observable invalidation for the .system theme: reading
     // UITraitCollection.current directly never re-renders when the system
     // appearance toggles, while this environment value does (issue #7).
+    // ContentView applies .preferredColorScheme(themeMode), so this also
+    // reflects explicit .dark/.light choices and one comparison covers all
+    // three cases.
     @Environment(\.colorScheme) private var colorScheme
     @State private var saveError: String?
 
     private var isDark: Bool {
-        switch settingsVM.themeMode {
-        case .dark: return true
-        case .light: return false
-        case .system: return colorScheme == .dark
-        }
+        colorScheme == .dark
     }
 
     var body: some View {

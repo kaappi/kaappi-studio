@@ -13,6 +13,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Runs unconditionally (no path filter): the iOS copy of the webview
+      # assets is easy to forget on a Swift-only PR, and Android CI is the
+      # only workflow that runs this check.
+      - name: Check webview asset parity (Android vs iOS copies)
+        run: bash scripts/check-webview-assets.sh
+
       # Runs unconditionally (no path filter): Examples.swift is iOS code, but
       # a Swift-only edit must still fail here when the two copies drift, and
       # Android CI is the only workflow that runs the check.
