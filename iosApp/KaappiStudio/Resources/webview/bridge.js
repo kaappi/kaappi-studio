@@ -4,21 +4,28 @@ let editor = null;
 let isRunning = false;
 let wasmModule = null;
 let wasiShim = null;
+let initFailures = null;
 
 const isDark = document.body.classList.contains("theme-dark");
 
-// WebKit rejects fetch() for file: URLs (the page is loaded via loadFileURL),
-// so the WASM must be fetched with XMLHttpRequest, which works for file: URLs.
-// Note: for file: URLs XHR reports status 0 on success, so treat 0 as OK when
-// a response body is present.
+// The WASM is loaded with XMLHttpRequest rather than fetch() because XHR's
+// file: URL support has been more consistent across WebKit versions than
+// fetch()'s; both currently require the allowFileAccessFromFileURLs
+// preference set in SchemeWebView.swift (verified on iOS 26: with it, both
+// succeed; without it, both fail). For file: URLs XHR reports status 0 on
+// success, so treat 0 as OK when a non-empty body is present.
 function loadWasmBytes(url) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("GET", url);
     xhr.responseType = "arraybuffer";
     xhr.onload = () => {
-      if (xhr.response && (xhr.status === 0 || (xhr.status >= 200 && xhr.status < 300))) {
+      const ok = xhr.response instanceof ArrayBuffer && xhr.response.byteLength > 0
+        && (xhr.status === 0 || (xhr.status >= 200 && xhr.status < 300));
+      if (ok) {
         resolve(xhr.response);
+      } else if (xhr.response && xhr.response.byteLength === 0) {
+        reject(new Error(`kaappi.wasm is empty (${url})`));
       } else {
         reject(new Error(`HTTP ${xhr.status} loading ${url}`));
       }
@@ -56,9 +63,13 @@ async function init() {
   notifyNative("ready", {});
 
   // Surface load failures: the native Coordinator handles runError by showing
-  // the error text; console.error alone is invisible inside a WKWebView.
+  // the error text; console.error alone is invisible inside a WKWebView. This
+  // intentionally fires on every cold start when the runtime is missing (e.g.
+  // the gitignored kaappi.wasm was never fetched) — it is the app's only
+  // feedback that Scheme execution is unavailable.
   if (failures.length > 0) {
-    notifyNative("runError", { error: failures.join(" ") });
+    initFailures = failures.join(" ");
+    notifyNative("runError", { error: initFailures });
   }
 }
 
@@ -81,12 +92,10 @@ window.kaappiAPI = {
   runCode() {
     if (isRunning) return;
     if (!wasmModule || !wasiShim) {
-      // Never fail silently: report why execution is unavailable so the
-      // native side can show it to the user.
+      // Never fail silently: reuse the init-time failure details (which join
+      // every load error) so the user sees exactly why execution is unavailable.
       notifyNative("runError", {
-        error: !wasmModule
-          ? "Scheme runtime is unavailable: kaappi.wasm failed to load."
-          : "Scheme runtime is unavailable: WASI shim failed to load.",
+        error: initFailures || "Scheme runtime is unavailable: initialization failed.",
       });
       return;
     }
