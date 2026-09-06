@@ -41,11 +41,10 @@ bash scripts/fetch-wasm.sh 0.21.0   # a specific version (a "v" prefix is accept
 ```
 
 The script verifies the download against the release's published `SHA256SUMS` and writes
-the binary to all three locations the platforms read:
+the binary to the two locations the platforms read:
 
 - `app/src/main/assets/kaappi.wasm` — the Android runtime (`SchemeRunner` reads the
   assets root)
-- `app/src/main/assets/webview/kaappi.wasm` — the Android webview assets
 - `iosApp/KaappiStudio/Resources/webview/kaappi.wasm` — the iOS WebView (`bridge.js`)
 
 See [Troubleshooting](troubleshooting.md#missing-or-misplaced-wasm-binary) for the

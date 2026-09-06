@@ -27,5 +27,4 @@ iosApp/Frameworks/
 *.xcuserdata
 xcuserdata/
 app/src/main/assets/kaappi.wasm
-app/src/main/assets/webview/kaappi.wasm
 iosApp/KaappiStudio/Resources/webview/kaappi.wasm

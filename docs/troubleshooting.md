@@ -13,11 +13,10 @@ Known gotchas in this repository. If you hit something not listed here, consider
   builds, which never fetch the binary).
 
 **Cause:** `kaappi.wasm` is gitignored, so it is not in the repo. It must be fetched
-with `scripts/fetch-wasm.sh`, which writes all three copies:
+with `scripts/fetch-wasm.sh`, which writes both copies:
 
-- the Android runtime reads `app/src/main/assets/kaappi.wasm` (assets root),
-- the iOS WebView fetches `iosApp/KaappiStudio/Resources/webview/kaappi.wasm`, and
-- the Android webview assets hold `app/src/main/assets/webview/kaappi.wasm`.
+- the Android runtime reads `app/src/main/assets/kaappi.wasm` (assets root), and
+- the iOS WebView fetches `iosApp/KaappiStudio/Resources/webview/kaappi.wasm`.
 
 **Fix:**
 
