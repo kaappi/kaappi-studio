@@ -35,20 +35,26 @@ export async function createSchemeEditor({ parent, doc, isDark, onRun }) {
     const highlightExtension = (dark) =>
       syntaxHighlighting(dark ? darkHighlight : lightHighlight);
 
+    // One extension list shared by creation and theme re-creation: anything
+    // added here survives a theme toggle instead of silently disappearing.
+    const schemeLanguage = StreamLanguage.define(scheme);
+    const extensions = (dark) => [
+      basicSetup,
+      editorTheme(dark),
+      highlightExtension(dark),
+      schemeLanguage,
+    ];
+
     // Native pushes setTheme on every UI update (including repeats with the
     // same value), so ignore no-op changes. codemirror-bundle.mjs does not
     // export Compartment, so a real theme change re-creates the editor state;
-    // doc, selection and scroll position are preserved, undo history is not.
+    // doc, selection and scroll position are preserved, undo history is not
+    // (issue #30: switch to compartment.reconfigure once the bundle exports it).
     let currentDark = isDark;
     const view = new EditorView({
       state: EditorState.create({
         doc,
-        extensions: [
-          basicSetup,
-          editorTheme(currentDark),
-          highlightExtension(currentDark),
-          StreamLanguage.define(scheme),
-        ],
+        extensions: extensions(currentDark),
       }),
       parent,
     });
@@ -66,12 +72,7 @@ export async function createSchemeEditor({ parent, doc, isDark, onRun }) {
         view.setState(EditorState.create({
           doc,
           selection,
-          extensions: [
-            basicSetup,
-            editorTheme(dark),
-            highlightExtension(dark),
-            StreamLanguage.define(scheme),
-          ],
+          extensions: extensions(dark),
         }));
         view.scrollDOM.scrollTop = scrollTop;
       },
