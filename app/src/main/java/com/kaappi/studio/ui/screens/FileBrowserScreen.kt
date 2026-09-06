@@ -45,6 +45,7 @@ fun FileBrowserScreen(
     viewModel: FileBrowserViewModel,
     onFileSelected: (SchemeFile) -> Unit,
     onNewFile: (String) -> Unit,
+    onFileDeleted: (SchemeFile) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val files by viewModel.files.collectAsState()
@@ -110,6 +111,7 @@ fun FileBrowserScreen(
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteFile(file.path)
+                    onFileDeleted(file)
                     deleteTarget = null
                 }) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)

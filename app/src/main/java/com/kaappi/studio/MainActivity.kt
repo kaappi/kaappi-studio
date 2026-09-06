@@ -63,6 +63,7 @@ import com.kaappi.studio.ui.screens.EditorScreen
 import com.kaappi.studio.ui.screens.ExamplesScreen
 import com.kaappi.studio.ui.screens.FileBrowserScreen
 import com.kaappi.studio.ui.screens.SettingsScreen
+import com.kaappi.studio.ui.screens.applyEditorAppearance
 import com.kaappi.studio.ui.theme.KaappiStudioTheme
 import com.kaappi.studio.viewmodel.EditorViewModel
 import com.kaappi.studio.viewmodel.FileBrowserViewModel
@@ -268,12 +269,17 @@ private fun KaappiStudioApp(
     }
 
     // Push queued editor content (opened file, picked example, restored draft)
-    // into the live WebView once it is showing and ready.
-    LaunchedEffect(currentSection, pendingCode, isReady) {
+    // into the live WebView once it is showing and ready. Theme and font size
+    // are re-sent here too: the AndroidView update block can fire before the
+    // page has committed and lose them against the blank initial page, so the
+    // ready state must trigger a retry (issue #15).
+    LaunchedEffect(currentSection, pendingCode, isReady, isDark, fontSize) {
         if (currentSection == NavSection.EDITOR && isReady) {
+            val webView = getEditorWebView()
             editorVM.consumePendingCode()?.let { code ->
-                setEditorCode(getEditorWebView(), code)
+                setEditorCode(webView, code)
             }
+            applyEditorAppearance(webView, isDark, fontSize)
         }
     }
 
@@ -416,6 +422,19 @@ private fun KaappiStudioApp(
                                 }
                             } catch (e: IllegalArgumentException) {
                                 showFileError("Could not create file", e)
+                            }
+                        },
+                        onFileDeleted = { file ->
+                            // SchemeFile.name and currentFileName are both
+                            // stored as base names without the .scm extension,
+                            // so they compare directly. Resetting the pending
+                            // code queues an empty document that replaces the
+                            // deleted file's content next time the editor is
+                            // shown, and clearing the name drops it from the
+                            // title and the save-dialog prefill (issue #15).
+                            if (file.name == editorVM.currentFileName.value) {
+                                editorVM.setPendingCode("")
+                                editorVM.setCurrentFile(null)
                             }
                         },
                         modifier = Modifier

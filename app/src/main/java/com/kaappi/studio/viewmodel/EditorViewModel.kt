@@ -116,8 +116,15 @@ class EditorViewModel(
         )
     }
 
+    /**
+     * Stores the open file's base name without the `.scm` extension; the title
+     * and save-dialog prefill re-append it. Stripping one trailing `.scm` here
+     * normalizes every entry point — save dialog, new-file dialog, and file
+     * selection — so typing "foo.scm" cannot end up titled "foo.scm.scm"
+     * (issue #15).
+     */
     fun setCurrentFile(name: String?) {
-        _currentFileName.value = name
+        _currentFileName.value = name?.removeSuffix(".scm")
     }
 
     fun clearOutput() {

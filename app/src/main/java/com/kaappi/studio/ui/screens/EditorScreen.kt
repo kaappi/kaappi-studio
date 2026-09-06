@@ -50,9 +50,7 @@ fun EditorScreen(
                 .fillMaxWidth()
                 .weight(0.6f),
             update = { webView ->
-                val theme = if (isDark) "dark" else "light"
-                webView.evaluateJavascript("window.kaappiAPI?.setTheme('$theme')", null)
-                webView.evaluateJavascript("window.kaappiAPI?.setFontSize($fontSize)", null)
+                applyEditorAppearance(webView, isDark, fontSize)
             },
         )
 
@@ -106,4 +104,19 @@ fun EditorScreen(
             }
         }
     }
+}
+
+/**
+ * Pushes the current theme and font size into the editor page.
+ *
+ * Called from the [EditorScreen] update block on every recomposition and —
+ * because that block can fire in the same composition pass that attaches the
+ * WebView, before the page has committed, losing its commands against the
+ * blank initial page — again from the `ready` path in MainActivity so the
+ * appearance is always re-sent once the page reports ready (issue #15).
+ */
+internal fun applyEditorAppearance(webView: WebView, isDark: Boolean, fontSize: Int) {
+    val theme = if (isDark) "dark" else "light"
+    webView.evaluateJavascript("window.kaappiAPI?.setTheme('$theme')", null)
+    webView.evaluateJavascript("window.kaappiAPI?.setFontSize($fontSize)", null)
 }
