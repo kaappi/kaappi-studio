@@ -8,8 +8,11 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
+            // The save error propagates to EditorView, which presents it and
+            // only then updates the current file name — a failed save never
+            // fabricates success.
             EditorView(editorVM: editorVM, onSave: { name, content in
-                    _ = fileBrowserVM.saveFile(name: name, content: content)
+                    try fileBrowserVM.saveFile(name: name, content: content)
                 })
                 .tabItem {
                     Label("Editor", systemImage: "chevron.left.forwardslash.chevron.right")

@@ -4,9 +4,10 @@ import WebKit
 struct EditorView: View {
     @EnvironmentObject var settingsVM: SettingsViewModel
     @ObservedObject var editorVM: EditorViewModel
-    let onSave: (String, String) -> Void
+    let onSave: (String, String) throws -> SchemeFile
     @State private var showSaveDialog = false
     @State private var saveFileName = ""
+    @State private var saveError: String?
 
     private var isDark: Bool {
         switch settingsVM.themeMode {
@@ -93,8 +94,14 @@ struct EditorView: View {
                         editorVM.webView?.evaluateJavaScript("window.kaappiAPI?.getCode()") { result, _ in
                             let code = result as? String ?? ""
                             Task { @MainActor in
-                                onSave(saveFileName, code)
-                                editorVM.currentFileName = saveFileName
+                                do {
+                                    let saved = try onSave(saveFileName, code)
+                                    // Only a successful save names the file.
+                                    editorVM.currentFileName = saved.name
+                                } catch {
+                                    saveError = (error as? LocalizedError)?.errorDescription
+                                        ?? error.localizedDescription
+                                }
                             }
                         }
                     }
@@ -102,6 +109,14 @@ struct EditorView: View {
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("Enter a name for your Scheme file (.scm)")
+            }
+            .alert("Save Failed", isPresented: Binding(
+                get: { saveError != nil },
+                set: { if !$0 { saveError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(saveError ?? "")
             }
         }
     }

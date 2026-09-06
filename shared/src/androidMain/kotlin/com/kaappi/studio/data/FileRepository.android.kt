@@ -3,6 +3,7 @@ package com.kaappi.studio.data
 import android.content.Context
 import com.kaappi.studio.domain.SchemeFile
 import java.io.File
+import java.io.IOException
 
 actual class FileRepository(context: Context) {
     private val dir: File = File(context.filesDir, "schemes").also { it.mkdirs() }
@@ -14,12 +15,26 @@ actual class FileRepository(context: Context) {
             ?.map { it.toSchemeFile() }
             ?: emptyList()
 
-    actual fun readFile(path: String): String = File(path).readText()
+    actual fun readFile(path: String): String =
+        // Contract: throw on missing/unreadable files — never return "" (see expect KDoc).
+        try {
+            File(path).readText()
+        } catch (e: IOException) {
+            throw FileRepositoryException("Cannot read file at $path", e)
+        }
 
     actual fun writeFile(name: String, content: String): SchemeFile {
-        val safeName = if (name.endsWith(".scm")) name else "$name.scm"
-        val file = File(dir, safeName)
-        file.writeText(content)
+        val file = File(dir, SchemeFileNames.withExtension(SchemeFileNames.sanitize(name)))
+        // Contract: atomic write — the temp file is fully written before it
+        // replaces the target, so a crash mid-save keeps the previous version.
+        val tmp = File(dir, "${file.name}.tmp")
+        try {
+            tmp.writeText(content)
+            if (!tmp.renameTo(file)) throw IOException("rename(${tmp.name}) failed")
+        } catch (e: IOException) {
+            tmp.delete()
+            throw FileRepositoryException("Cannot save ${file.name}", e)
+        }
         return file.toSchemeFile()
     }
 
@@ -27,8 +42,10 @@ actual class FileRepository(context: Context) {
 
     actual fun renameFile(oldPath: String, newName: String): SchemeFile? {
         val old = File(oldPath)
-        val safeName = if (newName.endsWith(".scm")) newName else "$newName.scm"
-        val new = File(old.parentFile, safeName)
+        val new = File(old.parentFile, SchemeFileNames.withExtension(SchemeFileNames.sanitize(newName)))
+        // Contract: POSIX rename(2) silently replaces an existing destination;
+        // report the collision as a failure instead.
+        if (new.exists()) return null
         return if (old.renameTo(new)) new.toSchemeFile() else null
     }
 

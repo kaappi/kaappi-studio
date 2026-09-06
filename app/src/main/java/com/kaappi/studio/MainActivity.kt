@@ -33,6 +33,8 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -52,6 +54,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.kaappi.studio.bridge.KaappiBridge
 import com.kaappi.studio.bridge.decodeCodeResult
 import com.kaappi.studio.data.FileRepository
+import com.kaappi.studio.data.FileRepositoryException
+import com.kaappi.studio.data.SchemeFileNames
 import com.kaappi.studio.data.SettingsRepository
 import com.kaappi.studio.domain.ThemeMode
 import com.kaappi.studio.runtime.SchemeRunner
@@ -232,6 +236,30 @@ private fun KaappiStudioApp(
     val pendingCode by editorVM.pendingCode.collectAsState()
     var showSaveDialog by remember { mutableStateOf(false) }
     var saveFileName by remember { mutableStateOf("") }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Issue #10: set when a new file would overwrite an existing one; shows
+    // the confirmation dialog instead of silently truncating the file.
+    var overwriteTarget by remember { mutableStateOf<String?>(null) }
+
+    fun showFileError(prefix: String, e: Exception) {
+        scope.launch {
+            snackbarHostState.showSnackbar("$prefix: ${e.message ?: e.javaClass.simpleName}")
+        }
+    }
+
+    val createEmptyFile = { name: String ->
+        try {
+            val saved = fileBrowserVM.saveFile(name, "")
+            editorVM.setCurrentFile(saved.name)
+            editorVM.setPendingCode("")
+            currentSection = NavSection.EDITOR
+        } catch (e: FileRepositoryException) {
+            showFileError("Could not create file", e)
+        } catch (e: IllegalArgumentException) {
+            showFileError("Could not create file", e)
+        }
+    }
 
     val isDark = when (themeMode) {
         ThemeMode.DARK -> true
@@ -286,6 +314,7 @@ private fun KaappiStudioApp(
         },
     ) {
         Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 TopAppBar(
                     title = {
@@ -379,10 +408,15 @@ private fun KaappiStudioApp(
                             currentSection = NavSection.EDITOR
                         },
                         onNewFile = { name ->
-                            fileBrowserVM.saveFile(name, "")
-                            editorVM.setCurrentFile(name)
-                            editorVM.setPendingCode("")
-                            currentSection = NavSection.EDITOR
+                            try {
+                                if (fileBrowserVM.fileExists(name)) {
+                                    overwriteTarget = SchemeFileNames.sanitize(name)
+                                } else {
+                                    createEmptyFile(name)
+                                }
+                            } catch (e: IllegalArgumentException) {
+                                showFileError("Could not create file", e)
+                            }
                         },
                         modifier = Modifier
                             .fillMaxSize()
@@ -425,8 +459,14 @@ private fun KaappiStudioApp(
                                 // content to save (page not ready) rather than
                                 // clobbering the target file with "null".
                                 decodeCodeResult(rawCode)?.let { code ->
-                                    fileBrowserVM.saveFile(saveFileName, code)
-                                    editorVM.setCurrentFile(saveFileName)
+                                    try {
+                                        val saved = fileBrowserVM.saveFile(saveFileName, code)
+                                        editorVM.setCurrentFile(saved.name)
+                                    } catch (e: FileRepositoryException) {
+                                        showFileError("Could not save file", e)
+                                    } catch (e: IllegalArgumentException) {
+                                        showFileError("Could not save file", e)
+                                    }
                                 }
                             }
                             showSaveDialog = false
@@ -439,6 +479,34 @@ private fun KaappiStudioApp(
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { showSaveDialog = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+
+    overwriteTarget?.let { target ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { overwriteTarget = null },
+            title = { Text("Replace $target.scm?") },
+            text = {
+                Text(
+                    "A file with this name already exists. " +
+                        "Creating a new file will overwrite it with empty content.",
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        overwriteTarget = null
+                        createEmptyFile(target)
+                    },
+                ) {
+                    Text("Overwrite")
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { overwriteTarget = null }) {
                     Text("Cancel")
                 }
             },

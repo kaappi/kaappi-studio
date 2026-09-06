@@ -10,17 +10,29 @@ actual class SettingsRepository(context: Context) {
 
     actual fun getThemeMode(): ThemeMode {
         val name = prefs.getString("theme_mode", ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name
-        return ThemeMode.valueOf(name)
+        // Contract: a stale or corrupted stored value falls back to SYSTEM at
+        // startup instead of crashing (matches the iOS actual).
+        return try {
+            ThemeMode.valueOf(name)
+        } catch (_: IllegalArgumentException) {
+            ThemeMode.SYSTEM
+        }
     }
 
     actual fun setThemeMode(mode: ThemeMode) {
         prefs.edit().putString("theme_mode", mode.name).apply()
     }
 
-    actual fun getFontSize(): Int = prefs.getInt("font_size", 14)
+    actual fun getFontSize(): Int =
+        // Contract: only in-range stored values are trusted; anything else
+        // (including a stored 0) falls back to the default.
+        prefs.getInt("font_size", DEFAULT_FONT_SIZE)
+            .takeIf { it in MIN_FONT_SIZE..MAX_FONT_SIZE }
+            ?: DEFAULT_FONT_SIZE
 
     actual fun setFontSize(size: Int) {
-        prefs.edit().putInt("font_size", size).apply()
+        // Contract: clamp into the valid range so nothing invalid is ever stored.
+        prefs.edit().putInt("font_size", size.coerceIn(MIN_FONT_SIZE, MAX_FONT_SIZE)).apply()
     }
 
     actual fun getLastOpenedFile(): String? = prefs.getString("last_opened_file", null)

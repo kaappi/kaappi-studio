@@ -4,6 +4,8 @@ struct FileBrowserView: View {
     @StateObject private var viewModel = FileBrowserViewModel()
     @State private var showNewFileAlert = false
     @State private var newFileName = ""
+    @State private var overwriteTarget: String?
+    @State private var errorMessage: String?
     let onFileLoad: (String, String) -> Void
 
     var body: some View {
@@ -60,16 +62,59 @@ struct FileBrowserView: View {
             .alert("New File", isPresented: $showNewFileAlert) {
                 TextField("File name", text: $newFileName)
                 Button("Create") {
-                    if !newFileName.isEmpty {
-                        let file = viewModel.saveFile(name: newFileName, content: "")
-                        onFileLoad(file.name, "")
+                    do {
+                        let base = try SchemeFileNames.sanitize(newFileName)
+                        if try viewModel.fileExists(name: base) {
+                            // Confirm before overwriting an existing file with
+                            // empty content (issue #10).
+                            overwriteTarget = base
+                        } else {
+                            try createNewFile(base)
+                        }
+                    } catch {
+                        showError(error)
                     }
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("Enter a name for your Scheme file (.scm)")
             }
+            .alert("Replace \"\(overwriteTarget ?? "").scm\"?", isPresented: Binding(
+                get: { overwriteTarget != nil },
+                set: { if !$0 { overwriteTarget = nil } }
+            )) {
+                Button("Overwrite", role: .destructive) {
+                    guard let target = overwriteTarget else { return }
+                    do {
+                        try createNewFile(target)
+                    } catch {
+                        showError(error)
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("A file with this name already exists. " +
+                    "Creating a new file will overwrite it with empty content.")
+            }
+            .alert("Could Not Create File", isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(errorMessage ?? "")
+            }
             .onAppear { viewModel.refresh() }
         }
+    }
+
+    private func createNewFile(_ name: String) throws {
+        let file = try viewModel.saveFile(name: name, content: "")
+        onFileLoad(file.name, "")
+    }
+
+    private func showError(_ error: Error) {
+        errorMessage = (error as? LocalizedError)?.errorDescription
+            ?? error.localizedDescription
     }
 }
