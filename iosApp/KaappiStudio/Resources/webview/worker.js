@@ -14,13 +14,17 @@ self.onmessage = async ({ data: { code, wasmUrl } }) => {
       wasmModule = await WebAssembly.compile(await response.arrayBuffer());
     }
 
-    const stdoutLines = [];
-    const stderrLines = [];
+    // Raw write sinks (no line splitting): lineBuffered never flushes the
+    // trailing partial line, so output without a final newline would be lost.
+    const stdoutDecoder = new TextDecoder("utf-8", { fatal: false });
+    const stderrDecoder = new TextDecoder("utf-8", { fatal: false });
+    let stdoutText = "";
+    let stderrText = "";
 
     const fds = [
       new OpenFile(new File([])),
-      ConsoleStdout.lineBuffered(line => { stdoutLines.push(line); }),
-      ConsoleStdout.lineBuffered(line => { stderrLines.push(line); }),
+      new ConsoleStdout(bytes => { stdoutText += stdoutDecoder.decode(bytes, { stream: true }); }),
+      new ConsoleStdout(bytes => { stderrText += stderrDecoder.decode(bytes, { stream: true }); }),
       new PreopenDirectory(".", [
         ["program.scm", new File(new TextEncoder().encode(code))],
       ]),
@@ -36,17 +40,16 @@ self.onmessage = async ({ data: { code, wasmUrl } }) => {
       wasi.start(instance);
     } catch (e) {
       if (e instanceof WebAssembly.RuntimeError) {
-        stderrLines.push(e.message ?? String(e));
+        stderrText += (e.message ?? String(e)) + "\n";
       } else if (e.code !== 0) {
-        stderrLines.push(e.message ?? String(e));
+        stderrText += (e.message ?? String(e)) + "\n";
       }
     }
     const elapsed = performance.now() - t0;
+    stdoutText += stdoutDecoder.decode();
+    stderrText += stderrDecoder.decode();
 
-    const stdout = stdoutLines.join("\n") + (stdoutLines.length ? "\n" : "");
-    const stderr = stderrLines.join("\n") + (stderrLines.length ? "\n" : "");
-
-    self.postMessage({ stdout, stderr, elapsed });
+    self.postMessage({ stdout: stdoutText, stderr: stderrText, elapsed });
   } catch (e) {
     self.postMessage({ stdout: "", stderr: String(e), elapsed: 0 });
   }
