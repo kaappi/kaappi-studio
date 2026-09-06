@@ -17,13 +17,18 @@ class SchemeRunnerTest {
     @get:Rule
     val tmp = TemporaryFolder()
 
+    private fun runner(cacheDir: File, loaderCalls: IntArray? = null): SchemeRunner =
+        SchemeRunner(
+            contextWithCacheDir(cacheDir),
+            SchemeRunner.ModuleCache {
+                loaderCalls?.let { it[0]++ }
+                emptyWasm
+            },
+        )
+
     @Test
     fun run_returnsResultWithoutStderr_forInstantiableModule() {
-        var loaderCalls = 0
-        val runner = SchemeRunner(contextWithCacheDir(tmp.newFolder())) {
-            loaderCalls++
-            emptyWasm
-        }
+        val runner = runner(tmp.newFolder())
 
         val result = kotlinx.coroutines.runBlocking { runner.run("(display \"hi\")") }
 
@@ -33,26 +38,25 @@ class SchemeRunnerTest {
     }
 
     @Test
-    fun run_cachesParsedModule_acrossRuns() {
-        var loaderCalls = 0
-        val runner = SchemeRunner(contextWithCacheDir(tmp.newFolder())) {
-            loaderCalls++
+    fun moduleCache_parsesModuleOnlyOnce() {
+        val loaderCalls = intArrayOf(0)
+        val cache = SchemeRunner.ModuleCache {
+            loaderCalls[0]++
             emptyWasm
         }
 
-        kotlinx.coroutines.runBlocking {
-            runner.run("(display 1)")
-            runner.run("(display 2)")
-        }
+        cache.module
+        cache.module
 
-        assertTrue("module must be parsed once, was parsed $loaderCalls times", loaderCalls == 1)
+        assertTrue("module must be parsed once, was parsed ${loaderCalls[0]} times", loaderCalls[0] == 1)
     }
 
     @Test
     fun run_reportsLoaderFailure_asStderrInsteadOfThrowing() {
-        val runner = SchemeRunner(contextWithCacheDir(tmp.newFolder())) {
-            throw FileNotFoundException("kaappi.wasm missing")
-        }
+        val runner = SchemeRunner(
+            contextWithCacheDir(tmp.newFolder()),
+            SchemeRunner.ModuleCache { throw FileNotFoundException("kaappi.wasm missing") },
+        )
 
         val result = kotlinx.coroutines.runBlocking { runner.run("(display 1)") }
 
@@ -60,15 +64,27 @@ class SchemeRunnerTest {
     }
 
     @Test
-    fun run_writesProgramToCacheDir_andCleansUp() {
+    fun run_writesProgramToUniqueWorkDir_andCleansUp() {
         val cacheDir = tmp.newFolder()
-        val runner = SchemeRunner(contextWithCacheDir(cacheDir)) { emptyWasm }
+        val runner = runner(cacheDir)
 
         kotlinx.coroutines.runBlocking { runner.run("(display 1)") }
 
-        val workDir = File(cacheDir, "kaappi-run")
-        assertTrue(workDir.isDirectory)
-        val leftovers = workDir.listFiles()?.filter { it.name == "program.scm" } ?: emptyList()
-        assertTrue("program.scm should be deleted after the run", leftovers.isEmpty())
+        val runRoot = File(cacheDir, "kaappi-run")
+        assertTrue(runRoot.isDirectory)
+        val leftovers = runRoot.listFiles().orEmpty()
+        assertTrue(
+            "per-run work directories must be removed after the run, found: $leftovers",
+            leftovers.isEmpty(),
+        )
+    }
+
+    @Test
+    fun runDirectory_isUniquePerRun_soConcurrentRunsCannotRace() {
+        val runner = runner(tmp.newFolder())
+
+        val dirs = (1..10).map { runner.newRunDirectory() }
+
+        assertTrue("run directories must be unique, got: $dirs", dirs.size == dirs.toSet().size)
     }
 }

@@ -84,17 +84,31 @@ Run flow (Android):
 
 1. The Play button evaluates `window.kaappiAPI?.getCode()` in the WebView; the JS result
    (a JSON-encoded string) comes back through the `evaluateJavascript` callback.
-2. `EditorViewModel.runCode()` invokes `SchemeRunner` on `Dispatchers.IO`.
-3. `SchemeRunner` writes the code to `cacheDir/kaappi-run/program.scm`, configures WASI
-   with args `["kaappi", "program.scm"]`, instantiates the cached `kaappi.wasm` module in
-   a fresh `Store`, and captures stdout/stderr into memory buffers.
+2. `EditorViewModel.runCode()` builds a fresh `SchemeRunner` and invokes it on
+   `Dispatchers.IO`. While a run is in progress the Play button is replaced by a
+   Stop button; `EditorViewModel.stopRun()` cancels the run job and unblocks the UI.
+3. `SchemeRunner` writes the code to a unique per-run directory
+   `cacheDir/kaappi-run/run-<uuid>/program.scm`, configures WASI with args
+   `["kaappi", "program.scm"]`, instantiates the shared `kaappi.wasm` module in a
+   fresh `Store`, and captures stdout/stderr into memory buffers.
 4. A `RunResult` flows back to the output pane, including elapsed milliseconds.
 
-Two details worth knowing:
+Details worth knowing:
 
+- The ViewModels are created through `ViewModelProvider` factories, so they (and any
+  run in progress) survive configuration changes.
+- The editor WebView is created once per Activity lifetime and reused across drawer
+  section switches; it is destroyed in `onDestroy()`. Editor content is pulled into
+  `EditorViewModel` in `onPause` and re-injected into a recreated WebView through
+  `setCodeBase64` (the `setEditorCode` path).
 - Chicory throws when the WASI program calls `exit`; `SchemeRunner` treats
   `exit code: 0` messages as success and everything else as stderr output.
-- The parsed WASM module is cached; each run re-instantiates but does not re-parse.
+- The parsed WASM module is cached (shared by the per-run `SchemeRunner` instances);
+  each run re-instantiates but does not re-parse.
+- Stop abandons the run rather than killing it: Chicory has no cooperative
+  cancellation, so the abandoned execution keeps running on `Dispatchers.IO` until
+  the program finishes on its own. Its output is discarded and it works in its own
+  per-run directory, so it cannot interfere with later runs.
 
 ### `iosApp/` — iOS
 

@@ -1,10 +1,14 @@
 package com.kaappi.studio
 
 import android.os.Bundle
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,7 +24,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -35,6 +38,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +47,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.kaappi.studio.bridge.KaappiBridge
 import com.kaappi.studio.data.FileRepository
 import com.kaappi.studio.data.SettingsRepository
 import com.kaappi.studio.domain.ThemeMode
@@ -65,16 +72,81 @@ enum class NavSection(val label: String) {
 }
 
 class MainActivity : ComponentActivity() {
+
+    // ViewModels live in the ViewModelStore so they (and their state, and any
+    // run in progress) survive configuration changes (issue #9).
+    private val settingsVM: SettingsViewModel by viewModels {
+        viewModelFactory {
+            initializer { SettingsViewModel(SettingsRepository(applicationContext)) }
+        }
+    }
+
+    private val fileBrowserVM: FileBrowserViewModel by viewModels {
+        viewModelFactory {
+            initializer { FileBrowserViewModel(FileRepository(applicationContext)) }
+        }
+    }
+
+    private val editorVM: EditorViewModel by viewModels {
+        viewModelFactory {
+            initializer {
+                // The parsed WASM module is shared; every run gets a fresh
+                // SchemeRunner with its own working directory (issues #9, #11).
+                val moduleCache = SchemeRunner.ModuleCache {
+                    assets.open("kaappi.wasm").use { it.readBytes() }
+                }
+                EditorViewModel { SchemeRunner(applicationContext, moduleCache) }
+            }
+        }
+    }
+
+    private val bridge = KaappiBridge(object : KaappiBridge.BridgeListener {
+        override fun onReady() {
+            editorVM.onReady()
+        }
+
+        override fun onReadyWithWebView(webView: WebView) {
+            // Covers code that was queued while the page was still loading
+            // (e.g. restored drafts after the Activity was recreated).
+            val pending = editorVM.consumePendingCode() ?: return
+            setEditorCode(webView, pending)
+        }
+    })
+
+    // Single editor WebView for the whole Activity lifetime (issue #3): created
+    // on first use and reused across drawer section switches instead of being
+    // leaked and recreated on every re-entry into composition.
+    private var editorWebView: WebView? = null
+
+    private fun getOrCreateEditorWebView(): WebView {
+        editorWebView?.let { return it }
+        return WebView(this).apply {
+            layoutParams = android.view.ViewGroup.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            )
+            settings.apply {
+                javaScriptEnabled = true
+                domStorageEnabled = true
+                allowFileAccess = true
+                allowContentAccess = true
+                @Suppress("DEPRECATION")
+                allowFileAccessFromFileURLs = true
+                @Suppress("DEPRECATION")
+                allowUniversalAccessFromFileURLs = true
+                cacheMode = WebSettings.LOAD_NO_CACHE
+            }
+            webChromeClient = WebChromeClient()
+            webViewClient = WebViewClient()
+            addJavascriptInterface(bridge, "KaappiBridge")
+            bridge.webView = this
+            loadUrl("file:///android_asset/webview/index.html")
+        }.also { editorWebView = it }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        val settingsRepo = SettingsRepository(this)
-        val fileRepo = FileRepository(this)
-        val schemeRunner = SchemeRunner(this)
-        val settingsVM = SettingsViewModel(settingsRepo)
-        val editorVM = EditorViewModel(schemeRunner)
-        val fileBrowserVM = FileBrowserViewModel(fileRepo)
 
         setContent {
             val themeMode by settingsVM.themeMode.collectAsState()
@@ -84,10 +156,53 @@ class MainActivity : ComponentActivity() {
                     editorVM = editorVM,
                     fileBrowserVM = fileBrowserVM,
                     themeMode = themeMode,
+                    getEditorWebView = ::getOrCreateEditorWebView,
                 )
             }
         }
     }
+
+    override fun onPause() {
+        super.onPause()
+        saveEditorDraft()
+    }
+
+    override fun onDestroy() {
+        editorWebView?.destroy()
+        editorWebView = null
+        bridge.webView = null
+        super.onDestroy()
+    }
+
+    /**
+     * Pulls the current editor content into the ViewModel so it can be
+     * re-injected if the Activity (and its WebView) is recreated. Skipped when
+     * a code load is still queued — that one wins.
+     */
+    private fun saveEditorDraft() {
+        val webView = editorWebView ?: return
+        webView.evaluateJavascript("window.kaappiAPI?.getCode()") { raw ->
+            if (editorVM.pendingCode.value == null) {
+                editorVM.setPendingCode(decodeCodeResult(raw))
+            }
+        }
+    }
+}
+
+private fun decodeCodeResult(raw: String?): String = try {
+    kotlinx.serialization.json.Json.decodeFromString<String>(raw ?: "\"\"")
+} catch (_: Exception) {
+    raw?.removeSurrounding("\"") ?: ""
+}
+
+private fun setEditorCode(webView: WebView, code: String) {
+    val b64 = android.util.Base64.encodeToString(
+        code.toByteArray(Charsets.UTF_8),
+        android.util.Base64.NO_WRAP,
+    )
+    webView.evaluateJavascript(
+        "window.kaappiAPI?.setCodeBase64('$b64')", null,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,15 +212,16 @@ private fun KaappiStudioApp(
     editorVM: EditorViewModel,
     fileBrowserVM: FileBrowserViewModel,
     themeMode: ThemeMode,
+    getEditorWebView: () -> WebView,
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var currentSection by remember { mutableStateOf(NavSection.EDITOR) }
-    var webView by remember { mutableStateOf<WebView?>(null) }
     val isRunning by editorVM.isRunning.collectAsState()
     val isReady by editorVM.isReady.collectAsState()
     val fontSize by settingsVM.fontSize.collectAsState()
     val currentFileName by editorVM.currentFileName.collectAsState()
+    val pendingCode by editorVM.pendingCode.collectAsState()
     var showSaveDialog by remember { mutableStateOf(false) }
     var saveFileName by remember { mutableStateOf("") }
 
@@ -113,6 +229,16 @@ private fun KaappiStudioApp(
         ThemeMode.DARK -> true
         ThemeMode.LIGHT -> false
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    }
+
+    // Push queued editor content (opened file, picked example, restored draft)
+    // into the live WebView once it is showing and ready.
+    LaunchedEffect(currentSection, pendingCode, isReady) {
+        if (currentSection == NavSection.EDITOR && isReady) {
+            editorVM.consumePendingCode()?.let { code ->
+                setEditorCode(getEditorWebView(), code)
+            }
+        }
     }
 
     ModalNavigationDrawer(
@@ -182,29 +308,24 @@ private fun KaappiStudioApp(
                             ) {
                                 Icon(Icons.Default.Save, contentDescription = "Save")
                             }
-                            IconButton(
-                                onClick = {
-                                    webView?.evaluateJavascript(
-                                        "window.kaappiAPI?.getCode()",
-                                    ) { rawCode ->
-                                        if (rawCode == null || rawCode == "null") return@evaluateJavascript
-                                        val code = try {
-                                            kotlinx.serialization.json.Json.decodeFromString<String>(rawCode)
-                                        } catch (_: Exception) {
-                                            rawCode.removeSurrounding("\"")
+                            if (isRunning) {
+                                IconButton(
+                                    onClick = { editorVM.stopRun() },
+                                ) {
+                                    Icon(Icons.Default.Stop, contentDescription = "Stop")
+                                }
+                            } else {
+                                IconButton(
+                                    onClick = {
+                                        getEditorWebView().evaluateJavascript(
+                                            "window.kaappiAPI?.getCode()",
+                                        ) { rawCode ->
+                                            if (rawCode == null || rawCode == "null") return@evaluateJavascript
+                                            editorVM.runCode(decodeCodeResult(rawCode))
                                         }
-                                        editorVM.runCode(code)
-                                    }
-                                },
-                                enabled = isReady && !isRunning,
-                            ) {
-                                if (isRunning) {
-                                    CircularProgressIndicator(
-                                        strokeWidth = 2.dp,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(8.dp),
-                                    )
-                                } else {
+                                    },
+                                    enabled = isReady,
+                                ) {
                                     Icon(Icons.Default.PlayArrow, contentDescription = "Run")
                                 }
                             }
@@ -222,7 +343,7 @@ private fun KaappiStudioApp(
                         editorViewModel = editorVM,
                         isDark = isDark,
                         fontSize = fontSize,
-                        onWebViewReady = { webView = it },
+                        getWebView = getEditorWebView,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(padding),
@@ -290,15 +411,10 @@ private fun KaappiStudioApp(
                 androidx.compose.material3.TextButton(
                     onClick = {
                         if (saveFileName.isNotBlank()) {
-                            webView?.evaluateJavascript(
+                            getEditorWebView().evaluateJavascript(
                                 "window.kaappiAPI?.getCode()",
                             ) { rawCode ->
-                                val code = try {
-                                    kotlinx.serialization.json.Json.decodeFromString<String>(rawCode ?: "\"\"")
-                                } catch (_: Exception) {
-                                    rawCode?.removeSurrounding("\"") ?: ""
-                                }
-                                fileBrowserVM.saveFile(saveFileName, code)
+                                fileBrowserVM.saveFile(saveFileName, decodeCodeResult(rawCode))
                                 editorVM.setCurrentFile(saveFileName)
                             }
                             showSaveDialog = false
@@ -316,15 +432,4 @@ private fun KaappiStudioApp(
             },
         )
     }
-}
-
-private fun setEditorCode(webView: WebView?, code: String) {
-    if (webView == null) return
-    val b64 = android.util.Base64.encodeToString(
-        code.toByteArray(Charsets.UTF_8),
-        android.util.Base64.NO_WRAP,
-    )
-    webView.evaluateJavascript(
-        "window.kaappiAPI?.setCodeBase64('$b64')", null,
-    )
 }

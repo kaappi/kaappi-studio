@@ -5,28 +5,43 @@ import com.dylibso.chicory.runtime.Store
 import com.dylibso.chicory.wasi.WasiOptions
 import com.dylibso.chicory.wasi.WasiPreview1
 import com.dylibso.chicory.wasm.Parser
+import com.dylibso.chicory.wasm.WasmModule
 import com.kaappi.studio.domain.RunResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.UUID
 
 class SchemeRunner(
     private val context: Context,
-    private val moduleLoader: () -> ByteArray = {
-        context.assets.open("kaappi.wasm").use { it.readBytes() }
-    },
+    private val moduleCache: ModuleCache,
 ) {
 
-    private var parsedModule: com.dylibso.chicory.wasm.WasmModule? = null
-
-    private fun getModule(): com.dylibso.chicory.wasm.WasmModule {
-        parsedModule?.let { return it }
-        val module = Parser.parse(moduleLoader())
-        parsedModule = module
-        return module
+    /**
+     * Parses the WASM module once so it can be shared by several [SchemeRunner]
+     * instances (each run uses its own runner, but re-parsing the binary for
+     * every run would be wasteful). Parsing is lazy: nothing is read until the
+     * first run actually needs the module.
+     */
+    class ModuleCache(moduleLoader: () -> ByteArray) {
+        val module: WasmModule by lazy { Parser.parse(moduleLoader()) }
     }
+
+    constructor(context: Context) : this(
+        context,
+        ModuleCache { context.assets.open("kaappi.wasm").use { it.readBytes() } },
+    )
+
+    /**
+     * Unique working directory per run so concurrent runs can never overwrite
+     * each other's program.scm (issue #9). The directory is created by [run]
+     * and removed when the run finishes, however long the (possibly abandoned)
+     * execution takes.
+     */
+    internal fun newRunDirectory(): File =
+        File(File(context.cacheDir, "kaappi-run"), "run-${UUID.randomUUID()}")
 
     suspend fun run(code: String): RunResult = withContext(Dispatchers.IO) {
         val stdout = ByteArrayOutputStream()
@@ -34,7 +49,7 @@ class SchemeRunner(
 
         val t0 = System.nanoTime()
         try {
-            val workDir = File(context.cacheDir, "kaappi-run")
+            val workDir = newRunDirectory()
             workDir.mkdirs()
             val programFile = File(workDir, "program.scm")
             programFile.writeText(code, Charsets.UTF_8)
@@ -58,7 +73,7 @@ class SchemeRunner(
             }
 
             try {
-                store.instantiate("kaappi", getModule())
+                store.instantiate("kaappi", moduleCache.module)
             } catch (e: Exception) {
                 val msg = e.message ?: e.toString()
                 if (!msg.contains("exit code: 0") && !msg.contains("exit(0)")) {
@@ -66,7 +81,7 @@ class SchemeRunner(
                 }
             }
 
-            programFile.delete()
+            workDir.deleteRecursively()
         } catch (e: Exception) {
             stderr.write("Runtime error: ${e.message}\n".toByteArray())
         }
