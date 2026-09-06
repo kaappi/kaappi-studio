@@ -65,7 +65,9 @@ test but cannot sign for distribution or upload to Play.
 ## Automation
 
 The repo ships AI-agent skills under [`.cursor/skills/`](../.cursor/skills/) that
-script this flow step by step. They are the source of truth for the exact commands:
+script this flow step by step. They are the source of truth for the exact commands
+(and are exposed to ZCode through the committed `.zcode/skills` symlink — the files
+under `.cursor/skills/` are canonical):
 
 | Skill | Scope |
 |-------|-------|

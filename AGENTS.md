@@ -59,7 +59,7 @@ Versions are centralized in `gradle/libs.versions.toml` (version catalog). JDK 1
 | `app/` | Android app: Compose UI (`ui/screens/`), ViewModels, `bridge/KaappiBridge.kt`, `runtime/SchemeRunner.kt` (Chicory JVM WASM runtime) |
 | `iosApp/` | SwiftUI app: `Bridge/SchemeWebView.swift`, ViewModels, Views, `Resources/webview/` assets |
 | `docs/` | Contributor documentation |
-| `.cursor/skills/` | Release automation playbooks (source of truth for release steps) |
+| `.cursor/skills/` | Release automation playbooks (source of truth for release steps). Exposed to ZCode via the `.zcode/skills` symlink — edit the files under `.cursor/skills/`, never the symlink |
 | `.github/workflows/` | Android CI (fetch wasm → assembleDebug → test) and iOS CI (xcodebuild build + test) |
 
 ## Execution model (why the platforms differ)
