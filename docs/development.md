@@ -106,6 +106,13 @@ A CI check diffs the two lists on every push and pull request — run it locally
 python3 scripts/check-examples-parity.py
 ```
 
+The check compares the *runtime strings*, not the raw source. It understands
+Kotlin raw strings with `trimMargin()` and Swift multiline literals (indentation
+stripping plus the `\\`, `\"`, `\n`, `\t`, `\r`, `\0` escapes). Write a Scheme
+character literal like `#\a` as `#\a` in Kotlin and `#\\a` in Swift — the check
+decodes both to the same value. String interpolation (`\(...)` in Swift) and
+unknown escapes fail the check loudly instead of comparing the wrong thing.
+
 Keep the workload small too: iOS runs Scheme inside the WebView's main thread, so huge
 iteration counts or very long programs freeze the UI (see
 [architecture.md](architecture.md)). `ExampleRepositoryTest` enforces a per-example

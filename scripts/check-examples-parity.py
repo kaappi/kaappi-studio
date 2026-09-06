@@ -20,6 +20,13 @@ The extraction models the runtime string of each language:
   * Swift: multiline literals drop the newline after the opening delimiter
     and strip the closing delimiter's indentation from every line.
 
+Both sides decode the escape sequences their string literals process
+(``\\``, ``\\"``, ``\\n``, ``\\t``, ``\\r``, ``\\$`` for Kotlin; ``\\``,
+``\\"``, ``\\n``, ``\\t``, ``\\r``, ``\\0`` for Swift), so a Scheme character
+literal like ``#\\a`` written as ``#\\\\a`` in Swift compares equal to the
+Kotlin raw string. Interpolation and unknown escapes raise instead of
+silently mis-comparing.
+
 Exit status is 0 when the two files are in sync, 1 otherwise.
 """
 
@@ -65,9 +72,11 @@ KOTLIN_BLOCK = re.compile(
     re.S,
 )
 
+SWIFT_STRING = r'"(?P<%s>(?:[^"\\]|\\.)*)"'
+
 SWIFT_BLOCK = re.compile(
-    r'id:\s*"(?P<id>[^"]*)"\s*,\s*title:\s*"(?P<title>[^"]*)"\s*,\s*'
-    r'description:\s*"(?P<description>[^"]*)"\s*,\s*'
+    r'id:\s*' + SWIFT_STRING % "id" + r'\s*,\s*title:\s*' + SWIFT_STRING % "title" + r'\s*,\s*'
+    r'description:\s*' + SWIFT_STRING % "description" + r'\s*,\s*'
     r'category:\s*\.([A-Za-z]+)\s*,\s*code:\s*"""(?P<code>.*?)"""',
     re.S,
 )
@@ -81,6 +90,38 @@ def unescape_kotlin(literal: str) -> str:
         ch = literal[i]
         if ch == "\\" and i + 1 < len(literal):
             out.append(KOTLIN_UNESCAPES.get(literal[i : i + 2], literal[i + 1]))
+            i += 2
+        else:
+            out.append(ch)
+            i += 1
+    return "".join(out)
+
+
+def unescape_swift(literal: str) -> str:
+    """Decode the escape sequences a Swift string literal processes at runtime.
+
+    Covers the set that can legitimately appear in these files (``\\\\``,
+    ``\\"``, ``\\n``, ``\\t``, ``\\r``, ``\\0``). String interpolation ``\\(...)``
+    and any other escape raise: interpolation cannot be modeled statically, and
+    an unknown escape would be a Swift compile error anyway — both deserve a
+    loud failure rather than a silently wrong comparison.
+    """
+    escapes = {r"\\": "\\", r"\"": '"', r"\n": "\n", r"\t": "\t", r"\r": "\r", r"\0": "\0"}
+    out, i = [], 0
+    while i < len(literal):
+        ch = literal[i]
+        if ch == "\\":
+            if i + 1 >= len(literal):
+                raise ValueError(f"trailing backslash in Swift string literal: {literal!r}")
+            two = literal[i : i + 2]
+            if two == r"\(":
+                raise ValueError(
+                    "Swift string interpolation \\(...) is not supported by this check; "
+                    f"rewrite the literal: {literal!r}"
+                )
+            if two not in escapes:
+                raise ValueError(f"unsupported escape sequence {two!r} in Swift string literal: {literal!r}")
+            out.append(escapes[two])
             i += 2
         else:
             out.append(ch)
@@ -126,7 +167,7 @@ def decode_swift_code(raw: str) -> str:
         if line == "":
             decoded.append(line)
         elif len(line) >= indent and line[:indent].isspace():
-            decoded.append(line[indent:])
+            decoded.append(unescape_swift(line[indent:]))
         else:
             raise ValueError(f"Swift line is less indented than the closing delimiter: {line!r}")
     return "\n".join(decoded)
@@ -158,9 +199,9 @@ def parse_swift(text: str) -> list[tuple]:
             raise ValueError(f"unknown Swift category: .{match.group(4)}")
         examples.append(
             (
-                match.group(1),
-                match.group(2),
-                match.group(3),
+                unescape_swift(match.group(1)),
+                unescape_swift(match.group(2)),
+                unescape_swift(match.group(3)),
                 category,
                 decode_swift_code(match.group(5)),
             )
