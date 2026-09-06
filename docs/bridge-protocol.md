@@ -33,7 +33,13 @@ All messages are JSON: `{ "event": "<name>", ...payload }`.
 | `ready` | both | — | Editor finished initializing; enables Run/Save buttons and triggers pending-code injection. |
 | `runStart` | iOS | — | Execution began (sets `isRunning`). |
 | `runComplete` | iOS | `stdout`, `stderr`, `elapsed` | Execution finished successfully (times in ms). |
-| `runError` | iOS | `error` | Execution failed. |
+| `runError` | iOS | `error` | Execution failed. Also posted when `kaappi.wasm` or the WASI shim fails to load during init, and when Play is pressed while the runtime is unavailable. |
+
+On iOS, `runComplete`'s `stdout`/`stderr` are the raw program output (decoded
+incrementally, no line buffering), so output without a trailing newline — e.g.
+`(display "42")` — is preserved exactly. `kaappi.wasm` is loaded with
+`XMLHttpRequest` (`responseType: "arraybuffer"`) because WebKit rejects `fetch()`
+for `file:` URLs.
 
 The Android `KaappiBridge` currently only inspects the raw JSON for `"ready"` and ignores
 everything else — Android produces run results natively and posts no run events.

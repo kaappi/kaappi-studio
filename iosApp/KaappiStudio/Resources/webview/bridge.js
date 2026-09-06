@@ -7,20 +7,44 @@ let wasiShim = null;
 
 const isDark = document.body.classList.contains("theme-dark");
 
+// WebKit rejects fetch() for file: URLs (the page is loaded via loadFileURL),
+// so the WASM must be fetched with XMLHttpRequest, which works for file: URLs.
+// Note: for file: URLs XHR reports status 0 on success, so treat 0 as OK when
+// a response body is present.
+function loadWasmBytes(url) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", url);
+    xhr.responseType = "arraybuffer";
+    xhr.onload = () => {
+      if (xhr.response && (xhr.status === 0 || (xhr.status >= 200 && xhr.status < 300))) {
+        resolve(xhr.response);
+      } else {
+        reject(new Error(`HTTP ${xhr.status} loading ${url}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error(`Network error loading ${url}`));
+    xhr.send();
+  });
+}
+
 async function init() {
+  const failures = [];
+
   try {
     const wasmUrl = new URL("./kaappi.wasm", import.meta.url).href;
-    const resp = await fetch(wasmUrl);
-    const bytes = await resp.arrayBuffer();
+    const bytes = await loadWasmBytes(wasmUrl);
     wasmModule = await WebAssembly.compile(bytes);
   } catch (e) {
     console.error("Failed to load WASM:", e);
+    failures.push(`Scheme runtime failed to load: ${e?.message ?? e}`);
   }
 
   try {
     wasiShim = await import("./wasi-shim-bundle.mjs");
   } catch (e) {
     console.error("Failed to load WASI shim:", e);
+    failures.push(`WASI shim failed to load: ${e?.message ?? e}`);
   }
 
   editor = await createSchemeEditor({
@@ -30,6 +54,12 @@ async function init() {
     onRun: () => {},
   });
   notifyNative("ready", {});
+
+  // Surface load failures: the native Coordinator handles runError by showing
+  // the error text; console.error alone is invisible inside a WKWebView.
+  if (failures.length > 0) {
+    notifyNative("runError", { error: failures.join(" ") });
+  }
 }
 
 function notifyNative(event, data) {
@@ -49,7 +79,17 @@ window.kaappiAPI = {
   },
 
   runCode() {
-    if (isRunning || !wasmModule || !wasiShim) return;
+    if (isRunning) return;
+    if (!wasmModule || !wasiShim) {
+      // Never fail silently: report why execution is unavailable so the
+      // native side can show it to the user.
+      notifyNative("runError", {
+        error: !wasmModule
+          ? "Scheme runtime is unavailable: kaappi.wasm failed to load."
+          : "Scheme runtime is unavailable: WASI shim failed to load.",
+      });
+      return;
+    }
     isRunning = true;
     notifyNative("runStart", {});
 
@@ -57,13 +97,19 @@ window.kaappiAPI = {
       const code = editor.getContent();
       const { WASI, File, OpenFile, ConsoleStdout, PreopenDirectory } = wasiShim;
 
-      const stdoutLines = [];
-      const stderrLines = [];
+      // Raw write sinks (no line splitting): ConsoleStdout.lineBuffered keeps
+      // the trailing partial line in an internal buffer it never flushes, so
+      // output like (display "42") without a newline would be lost. Decode
+      // incrementally and flush the decoders after wasi.start returns.
+      const stdoutDecoder = new TextDecoder("utf-8", { fatal: false });
+      const stderrDecoder = new TextDecoder("utf-8", { fatal: false });
+      let stdoutText = "";
+      let stderrText = "";
 
       const fds = [
         new OpenFile(new File([])),
-        ConsoleStdout.lineBuffered(line => { stdoutLines.push(line); }),
-        ConsoleStdout.lineBuffered(line => { stderrLines.push(line); }),
+        new ConsoleStdout(bytes => { stdoutText += stdoutDecoder.decode(bytes, { stream: true }); }),
+        new ConsoleStdout(bytes => { stderrText += stderrDecoder.decode(bytes, { stream: true }); }),
         new PreopenDirectory(".", [
           ["program.scm", new File(new TextEncoder().encode(code))],
         ]),
@@ -78,17 +124,17 @@ window.kaappiAPI = {
           wasi.start(instance);
         } catch (e) {
           if (e instanceof WebAssembly.RuntimeError) {
-            stderrLines.push(e.message ?? String(e));
+            stderrText += (e.message ?? String(e)) + "\n";
           } else if (e.code !== 0) {
-            stderrLines.push(e.message ?? String(e));
+            stderrText += (e.message ?? String(e)) + "\n";
           }
         }
         const elapsed = performance.now() - t0;
-        const stdout = stdoutLines.join("\n") + (stdoutLines.length ? "\n" : "");
-        const stderr = stderrLines.join("\n") + (stderrLines.length ? "\n" : "");
+        stdoutText += stdoutDecoder.decode();
+        stderrText += stderrDecoder.decode();
 
         isRunning = false;
-        notifyNative("runComplete", { stdout, stderr, elapsed });
+        notifyNative("runComplete", { stdout: stdoutText, stderr: stderrText, elapsed });
       }).catch(e => {
         isRunning = false;
         notifyNative("runError", { error: e.message });
