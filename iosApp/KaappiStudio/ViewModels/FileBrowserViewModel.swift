@@ -39,7 +39,9 @@ enum SchemeFileNames {
     /// particular path separators and "..", so a hostile name can never escape
     /// the schemes directory.
     static func sanitize(_ name: String) throws -> String {
-        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        // Kotlin's trim() strips newlines too, so .whitespacesAndNewlines
+        // keeps the two copies of the rule identical.
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw FileBrowserError.invalidFileName(name) }
         let base = trimmed.hasSuffix(extensionSuffix)
             ? String(trimmed.dropLast(extensionSuffix.count))
@@ -72,7 +74,10 @@ class FileBrowserViewModel: ObservableObject {
         ) else { return }
 
         // Every .scm file stays visible; non-UTF-8 content decodes lossily
-        // (U+FFFD) instead of dropping the file from the list.
+        // (U+FFFD) instead of dropping the file from the list. `content` is a
+        // best-effort snapshot — an unreadable file lists with empty content,
+        // so the load path must re-read through the throwing readFile(path:)
+        // and never trust this field for editing.
         files = items
             .filter { $0.pathExtension == "scm" }
             .map { url -> SchemeFile in
@@ -112,10 +117,13 @@ class FileBrowserViewModel: ObservableObject {
     }
 
     /// True when a file with this (sanitized) base name already exists, so the
-    /// new-file flow can confirm before overwriting.
+    /// new-file flow can confirm before overwriting. Checks the disk, not the
+    /// in-memory list: this view model instance can be separate from the one
+    /// other views save through, so `files` may be stale.
     func fileExists(name: String) throws -> Bool {
         let base = try SchemeFileNames.sanitize(name)
-        return files.contains { $0.name == base }
+        let url = directory.appendingPathComponent(SchemeFileNames.withExtension(base))
+        return FileManager.default.fileExists(atPath: url.path)
     }
 
     func deleteFile(path: String) {

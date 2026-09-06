@@ -33,8 +33,9 @@ actual class FileRepository {
                     name = name.removeSuffix(".scm"),
                     path = path,
                     // Contract: non-UTF-8 files stay visible with lossy content
-                    // instead of being dropped from the list.
-                    content = readTextLossy(path),
+                    // instead of being dropped from the list; a file that cannot
+                    // be read at all makes listFiles throw (see expect KDoc).
+                    content = decodeLossy(readData(path)),
                     lastModified = lastModified(path),
                 )
             }
@@ -44,9 +45,7 @@ actual class FileRepository {
     actual fun readFile(path: String): String {
         // Contract: throw on missing/unreadable files — never return "" (see
         // expect KDoc); invalid UTF-8 content decodes lossily, like Android.
-        val data = NSData.dataWithContentsOfFile(path)
-            ?: throw FileRepositoryException("Cannot read file at $path")
-        return decodeLossy(data)
+        return decodeLossy(readData(path))
     }
 
     actual fun writeFile(name: String, content: String): SchemeFile {
@@ -69,25 +68,25 @@ actual class FileRepository {
     actual fun renameFile(oldPath: String, newName: String): SchemeFile? {
         val safeName = SchemeFileNames.withExtension(SchemeFileNames.sanitize(newName))
         val newPath = "$dir/$safeName"
-        // Contract: refuse to overwrite an existing destination.
-        if (NSFileManager.defaultManager.fileExistsAtPath(newPath)) return null
-        val success = NSFileManager.defaultManager.moveItemAtPath(oldPath, toPath = newPath, error = null)
+        // Contract: refuse to overwrite an existing destination. Renaming a
+        // file to its own current name is a no-op success, not a collision.
+        val samePath = newPath == oldPath
+        if (!samePath && NSFileManager.defaultManager.fileExistsAtPath(newPath)) return null
+        val success = samePath ||
+            NSFileManager.defaultManager.moveItemAtPath(oldPath, toPath = newPath, error = null)
         if (!success) return null
         return SchemeFile(
             name = safeName.removeSuffix(".scm"),
             path = newPath,
-            content = readTextLossy(newPath),
+            content = decodeLossy(readData(newPath)),
             lastModified = NSDate().timeIntervalSince1970.toLong() * 1000,
         )
     }
 
-    /** UTF-8 content, decoded lossily; "" only when the file cannot be read at all. */
-    private fun readTextLossy(path: String): String {
-        NSString.stringWithContentsOfFile(path, encoding = NSUTF8StringEncoding, error = null)
-            ?.let { return it }
-        val data = NSData.dataWithContentsOfFile(path) ?: return ""
-        return decodeLossy(data)
-    }
+    /** The file's bytes; throws [FileRepositoryException] when it cannot be read. */
+    private fun readData(path: String): NSData =
+        NSData.dataWithContentsOfFile(path)
+            ?: throw FileRepositoryException("Cannot read file at $path")
 
     /** Malformed UTF-8 bytes become U+FFFD, matching java's lossy readText(). */
     private fun decodeLossy(data: NSData): String {

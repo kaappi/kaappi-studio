@@ -27,8 +27,11 @@ class SchemeFileNamesTest {
     }
 
     @Test
-    fun withExtension_appendsScmExactlyOnce() {
+    fun withExtension_alwaysAppends() {
         assertEquals("hello.scm", SchemeFileNames.withExtension("hello"))
-        assertEquals("hello.scm", SchemeFileNames.withExtension("hello.scm"))
+        // Deliberately strict: callers pass sanitized bases (sanitize strips a
+        // trailing extension), so withExtension appends unconditionally — same
+        // as the Swift mirror in FileBrowserViewModel.swift.
+        assertEquals("hello.scm.scm", SchemeFileNames.withExtension("hello.scm"))
     }
 }

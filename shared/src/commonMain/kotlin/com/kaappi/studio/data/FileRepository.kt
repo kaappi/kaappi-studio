@@ -41,9 +41,13 @@ object SchemeFileNames {
         return base
     }
 
-    /** Appends [EXTENSION] unless the base name already carries it. */
-    fun withExtension(base: String): String =
-        if (base.endsWith(EXTENSION)) base else "$base$EXTENSION"
+    /**
+     * Appends [EXTENSION] unconditionally. Callers must pass a sanitized base
+     * name: [sanitize] strips any trailing extension, so a base ending in
+     * [EXTENSION] would double it. The Swift mirror in
+     * `FileBrowserViewModel.swift` behaves the same way.
+     */
+    fun withExtension(base: String): String = "$base$EXTENSION"
 }
 
 /**
@@ -69,10 +73,14 @@ object SchemeFileNames {
  *   [listFiles][FileRepository.listFiles].
  * - **[renameFile][FileRepository.renameFile]** refuses to overwrite an
  *   existing destination; it returns null on any failure, including a name
- *   collision, and never silently replaces data.
+ *   collision, and never silently replaces data. Renaming a file to its own
+ *   current name is a no-op success, not a collision.
  * - **[listFiles][FileRepository.listFiles]** returns every `.scm` file in the
  *   directory, newest first. Non-UTF-8 content is decoded lossily (U+FFFD)
- *   rather than dropping the file, so it stays visible and deletable.
+ *   rather than dropping the file, so it stays visible and deletable. A file
+ *   that cannot be read at all makes [listFiles][FileRepository.listFiles]
+ *   throw [FileRepositoryException] — a listed entry never carries fabricated
+ *   empty content, which a later save would persist over the real file.
  */
 expect class FileRepository {
     fun listFiles(): List<SchemeFile>
