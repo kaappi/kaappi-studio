@@ -25,6 +25,9 @@ xcodebuild build -project iosApp/KaappiStudio.xcodeproj -scheme KaappiStudio \
   -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO
 ```
 
+The destination simulator name depends on the installed Xcode (e.g. `iPhone 17`
+ships with Xcode 26); list what you have with `xcrun simctl list devices available`.
+
 Versions are centralized in `gradle/libs.versions.toml` (version catalog). JDK 17+.
 
 ## Critical gotchas

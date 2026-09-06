@@ -17,10 +17,16 @@ targets:
     platform: iOS
     sources:
       - path: KaappiStudio
+        excludes:
+          - "Resources/webview"
+      # Folder reference: the whole directory is copied verbatim into the
+      # bundle as `webview/`, so gitignored files like kaappi.wasm are bundled
+      # when present and xcodegen never needs regenerating for webview changes.
+      - path: KaappiStudio/Resources/webview
+        type: folder
+        buildPhase: resources
     resources:
       - path: KaappiStudio/Resources/Assets.xcassets
-      - path: KaappiStudio/Resources/webview
-        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kaappi.studio.ios
