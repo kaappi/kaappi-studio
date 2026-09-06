@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.kaappi.studio.bridge.KaappiBridge
+import com.kaappi.studio.bridge.decodeCodeResult
 import com.kaappi.studio.data.FileRepository
 import com.kaappi.studio.data.SettingsRepository
 import com.kaappi.studio.domain.ThemeMode
@@ -106,10 +107,12 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun onReadyWithWebView(webView: WebView) {
-            // Covers code that was queued while the page was still loading
-            // (e.g. restored drafts after the Activity was recreated).
-            val pending = editorVM.consumePendingCode() ?: return
-            setEditorCode(webView, pending)
+            // Fires once per page load — i.e. when a (re)created WebView is
+            // ready. Queued code (opened file/example) wins over the restored
+            // draft; the draft is only ever re-injected here, never on a
+            // plain pause/resume, which would reset cursor and undo history.
+            val code = editorVM.consumePendingCode() ?: editorVM.consumeDraft() ?: return
+            setEditorCode(webView, code)
         }
     })
 
@@ -140,6 +143,9 @@ class MainActivity : ComponentActivity() {
             webViewClient = WebViewClient()
             addJavascriptInterface(bridge, "KaappiBridge")
             bridge.webView = this
+            // The old readiness (if any) belonged to a previous page; Play and
+            // Save stay disabled until this page posts its `ready` event.
+            editorVM.onWebViewReset()
             loadUrl("file:///android_asset/webview/index.html")
         }.also { editorWebView = it }
     }
@@ -168,9 +174,15 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        editorWebView?.destroy()
+        editorWebView?.let { webView ->
+            // Remove from the Compose hierarchy before destroying, per the
+            // WebView.destroy() contract.
+            (webView.parent as? android.view.ViewGroup)?.removeView(webView)
+            webView.destroy()
+        }
         editorWebView = null
         bridge.webView = null
+        editorVM.onWebViewReset()
         super.onDestroy()
     }
 
@@ -182,17 +194,13 @@ class MainActivity : ComponentActivity() {
     private fun saveEditorDraft() {
         val webView = editorWebView ?: return
         webView.evaluateJavascript("window.kaappiAPI?.getCode()") { raw ->
+            // A queued load wins over the draft; a null result (page not ready
+            // yet) must not become the draft's content.
             if (editorVM.pendingCode.value == null) {
-                editorVM.setPendingCode(decodeCodeResult(raw))
+                decodeCodeResult(raw)?.let { editorVM.saveDraft(it) }
             }
         }
     }
-}
-
-private fun decodeCodeResult(raw: String?): String = try {
-    kotlinx.serialization.json.Json.decodeFromString<String>(raw ?: "\"\"")
-} catch (_: Exception) {
-    raw?.removeSurrounding("\"") ?: ""
 }
 
 private fun setEditorCode(webView: WebView, code: String) {
@@ -320,8 +328,7 @@ private fun KaappiStudioApp(
                                         getEditorWebView().evaluateJavascript(
                                             "window.kaappiAPI?.getCode()",
                                         ) { rawCode ->
-                                            if (rawCode == null || rawCode == "null") return@evaluateJavascript
-                                            editorVM.runCode(decodeCodeResult(rawCode))
+                                            decodeCodeResult(rawCode)?.let(editorVM::runCode)
                                         }
                                     },
                                     enabled = isReady,
@@ -414,8 +421,13 @@ private fun KaappiStudioApp(
                             getEditorWebView().evaluateJavascript(
                                 "window.kaappiAPI?.getCode()",
                             ) { rawCode ->
-                                fileBrowserVM.saveFile(saveFileName, decodeCodeResult(rawCode))
-                                editorVM.setCurrentFile(saveFileName)
+                                // Skip the save entirely when there is no
+                                // content to save (page not ready) rather than
+                                // clobbering the target file with "null".
+                                decodeCodeResult(rawCode)?.let { code ->
+                                    fileBrowserVM.saveFile(saveFileName, code)
+                                    editorVM.setCurrentFile(saveFileName)
+                                }
                             }
                             showSaveDialog = false
                         }

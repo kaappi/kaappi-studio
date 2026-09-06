@@ -29,14 +29,42 @@ class EditorViewModel(
     private val _pendingCode = MutableStateFlow<String?>(null)
     val pendingCode: StateFlow<String?> = _pendingCode.asStateFlow()
 
+    private var lastDraft: String? = null
+
     private var runJob: Job? = null
 
     fun onReady() {
         _isReady.value = true
     }
 
+    /**
+     * Called when the editor WebView is torn down or recreated: the page the
+     * previous readiness referred to no longer exists, so Play/Save must stay
+     * disabled until the fresh page posts its `ready` event.
+     */
+    fun onWebViewReset() {
+        _isReady.value = false
+    }
+
     fun setPendingCode(code: String) {
         _pendingCode.value = code
+    }
+
+    /**
+     * Stores the editor content pulled at `onPause`. Kept apart from
+     * `pendingCode` on purpose: a draft must only be re-injected when the
+     * WebView is actually recreated (by [consumeDraft] from the `ready`
+     * callback), never on a plain pause/resume, which would reset the
+     * editor's cursor, selection, and undo history.
+     */
+    fun saveDraft(code: String) {
+        lastDraft = code
+    }
+
+    fun consumeDraft(): String? {
+        val code = lastDraft
+        lastDraft = null
+        return code
     }
 
     fun consumePendingCode(): String? {
@@ -64,11 +92,16 @@ class EditorViewModel(
     /**
      * Stops tracking the current run and unblocks the UI immediately.
      *
-     * Chicory has no cooperative cancellation, so the WASM execution on the
-     * abandoned job keeps running on Dispatchers.IO until the program finishes
-     * on its own; its output is discarded and it works in its own isolated
-     * working directory, so it cannot corrupt later runs. When the surrounding
-     * ViewModel is cleared, viewModelScope is cancelled the same way.
+     * Chicory has no cooperative cancellation, so there is no way to interrupt
+     * the WASM: the abandoned job keeps running on its dedicated single-thread
+     * executor until the program finishes on its own — for an infinite loop,
+     * that means a thread and a CPU core stay busy indefinitely (actually
+     * stopping the execution would require moving the runner into a separate
+     * process). The abandoned run works in its own isolated working directory,
+     * its output is discarded, and it never occupies the shared Dispatchers.IO
+     * pool, so it cannot starve later runs or other app work. When the
+     * surrounding ViewModel is cleared, viewModelScope is cancelled the same
+     * way.
      */
     fun stopRun() {
         val job = runJob ?: return
