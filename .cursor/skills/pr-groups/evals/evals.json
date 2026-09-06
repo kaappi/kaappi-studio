@@ -1,0 +1,77 @@
+{
+  "skill_name": "pr-groups",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Group the issues labelled high into sets I can each work on in a single PR.",
+      "expected_output": "Cohesive groups with files named, a merge order, and a parallelism verdict. #1 and #2 must be one group (both live in iosApp/KaappiStudio/Resources/webview/bridge.js and form one silent-failure chain). #3, #9 and #11 must respect the dependency edges stated in their bodies (#3 and #11 lean on #9's per-run isolation). #5 must be identified as land-first because it makes verification untrustworthy (signal-before-work).",
+      "files": [],
+      "expectations": [
+        "#1 and #2 appear in the same group, justified by both living in iosApp/KaappiStudio/Resources/webview/bridge.js",
+        "#5 is ordered before the groups it unblocks, on signal-before-work grounds (a failing Android Run does not disprove a fix while #5 stands)",
+        "The dependency edges from issue bodies (#3 → #9, #11 → #9, #4 → #14) are applied as hard ordering edges",
+        "Every group names the files it touches, and webview groups say which copy of the assets they touch",
+        "An explicit merge order is given, marking which groups are parallel"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Batch the issues labelled medium into single-PR sets.",
+      "expected_output": "Groups as above, plus #8 grouped as one root cause (unsanitized filenames plus swallowed write errors) spanning the Android FileRepository actual and the Swift FileBrowserViewModel, and #13 identified as land-first signal (iOS CI executes zero tests, so every iOS PR is green for free).",
+      "expectations": [
+        "#8 groups the Android and iOS filename failures as one shared cause stated in a sentence, not as two platform-labeled issues",
+        "#13 is ordered early on signal-before-work grounds",
+        "The response does not group #6 and #7 merely because both carry the webview label (different mechanisms, different files)",
+        "#4 is marked design-first or split, because its durable fix is hostage to #14's framework decision",
+        "The long pole is named, with a statement of whether the rest ships without it"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Group the open issues labelled wontfix into PRs.",
+      "expected_output": "A statement that no open issues carry that label, and no groups — must not fall back to the whole tracker.",
+      "expectations": [
+        "Response states that the label matched no open issues",
+        "Response contains no groups",
+        "Response does not fall back to grouping all open issues"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Which of these can I do in one PR: 1, 2? (skill argument: 1,2)",
+      "expected_output": "One group containing both, justified as the same file and one silent-failure chain in the iOS bridge — the broken fetch(file://) load (#1) and the missing runError plumbing that hides every failure (#2) must land together or the fix is still invisible.",
+      "expectations": [
+        "Both issues are placed in a single group",
+        "The group names iosApp/KaappiStudio/Resources/webview/bridge.js with the relevant lines",
+        "The response states that the Android copy of bridge.js is intentionally different, so no mirrored edit is needed there",
+        "The response notes the fix should include posting runError from the init-failure and runCode-guard paths (#2's second half)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "I want to launch concurrent sessions on the high-severity fixes rather than review a plan — give me the waves.",
+      "expected_output": "Bare paste-able wave lines containing only issue numbers, with every group in a wave touching files no other group in that wave touches.",
+      "expectations": [
+        "Response contains 'Wave N:' lines with comma-separated issue numbers",
+        "No issue number appears in more than one wave",
+        "Groups sharing a file never appear in the same wave",
+        "The wave lines contain no prose or commands mixed in"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Start wave 1 sessions for the plan you just gave me.",
+      "expected_output": "One session per wave-1 group launched concurrently, each in its own git worktree on a branch off a freshly-fetched origin/main, with a self-contained brief and the wrap-up contract (unit tests extended per the AGENTS.md test layout, short imperative commit subject, per-issue Closes keyword, gh pr create).",
+      "expectations": [
+        "Each group is launched in its own git worktree, never in the shared checkout or on main",
+        "Branches are cut from a freshly-fetched origin/main (git fetch first), not from the possibly-stale local checkout",
+        "All groups of the wave are launched concurrently rather than one at a time",
+        "Each session brief is self-contained and tells the session to read the issue bodies itself",
+        "The wrap-up contract states: extend/adjust unit tests (commonTest via :shared:testAndroidHostTest, app/src/test via ./gradlew test), short imperative commit subject, no version-bump commits, push, gh pr create with a per-issue Closes line",
+        "Gradle checks are directed to run in the foreground as one blocking call, not backgrounded waiting on a notification",
+        "The response warns that concurrent Gradle builds serialize on the project lock and that a waiting build is not hung",
+        "The response does not treat a single worktree's green test run as proof that main is green"
+      ]
+    }
+  ]
+}
