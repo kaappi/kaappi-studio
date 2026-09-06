@@ -54,16 +54,26 @@ Open `iosApp/KaappiStudio.xcodeproj` in Xcode and build for a simulator or devic
 
 ### WASM Binary
 
-The WASM binary can be fetched from Kaappi releases or built from source:
+The Scheme interpreter ships as a WebAssembly binary (`kaappi.wasm`, gitignored).
+Fetch it from Kaappi releases, then place copies where each platform reads it:
 
 ```bash
-# From release
 bash scripts/fetch-wasm.sh          # latest
 bash scripts/fetch-wasm.sh 0.21.0   # specific version
 
-# From source
+# The Android runtime (Chicory) reads the assets root:
+cp app/src/main/assets/webview/kaappi.wasm app/src/main/assets/kaappi.wasm
+# The iOS WebView fetches its own copy:
+cp app/src/main/assets/webview/kaappi.wasm iosApp/KaappiStudio/Resources/webview/kaappi.wasm
+```
+
+Or build it from source:
+
+```bash
 cd ../kaappi && zig build wasm
-cp zig-out/bin/kaappi.wasm ../kaappi-studio/app/src/main/assets/webview/
+cp zig-out/bin/kaappi.wasm ../kaappi-studio/app/src/main/assets/kaappi.wasm
+cp zig-out/bin/kaappi.wasm ../kaappi-studio/app/src/main/assets/webview/kaappi.wasm
+cp zig-out/bin/kaappi.wasm ../kaappi-studio/iosApp/KaappiStudio/Resources/webview/kaappi.wasm
 ```
 
 ## Tech Stack
@@ -76,6 +86,17 @@ Matches [Ukulele Companion](https://github.com/baijum/ukulele-companion):
 - iOS 16+ / Swift 6
 - kotlinx-coroutines 1.11.0
 - kotlinx-serialization 1.11.0
+
+## Contributing
+
+Developer documentation lives in [`docs/`](docs/README.md):
+
+- [Getting Started](docs/getting-started.md) — setup and first build
+- [Architecture](docs/architecture.md) — how the app works
+- [Bridge Protocol](docs/bridge-protocol.md) — WebView ↔ native messaging
+- [Development Guide](docs/development.md) — tests, lint, CI, common tasks
+- [Release Process](docs/release.md) — versioning and shipping
+- [Troubleshooting](docs/troubleshooting.md) — known gotchas
 
 ## License
 
