@@ -59,8 +59,9 @@ Unit tests live in two places and run on the JVM (no emulator needed):
 
 Conventions:
 
-- `SchemeRunner` takes an injectable `moduleLoader` lambda; tests pass an in-memory WASM
-  module instead of reading the gitignored `kaappi.wasm` asset.
+- `SchemeRunner` takes an injectable `ModuleCache` (built from a `moduleLoader` lambda);
+  tests pass an in-memory WASM module instead of reading the gitignored `kaappi.wasm`
+  asset.
 - `EditorViewModel` tests use `kotlinx-coroutines-test` (`Dispatchers.setMain`) because
   `viewModelScope` needs a Main dispatcher on the JVM.
 - Android framework interactions in tests use Mockito (`contextWithCacheDir` helper).
