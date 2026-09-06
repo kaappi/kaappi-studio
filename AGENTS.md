@@ -56,6 +56,18 @@ Versions are centralized in `gradle/libs.versions.toml` (version catalog). JDK 1
   `app/play-service-account.json`, and all `kaappi.wasm` paths are gitignored. Keep it
   that way.
 
+## Upstream interpreter bugs are reported at kaappi/kaappi
+
+**Mandatory:** `kaappi.wasm` is the Scheme interpreter built from the
+[kaappi/kaappi](https://github.com/kaappi/kaappi) repo; this studio only embeds it. If a
+bug fix here reveals the defect is actually in the interpreter — wrong evaluation
+results, a crash inside the WASM, missing/incorrect R7RS behavior — do **not** fix or
+paper over it in this repo. File an issue at kaappi/kaappi with a minimal Scheme
+reproduction and the expected vs. actual output, link it from the studio issue/PR, and
+keep any studio-side change minimal (a workaround at most, with a comment pointing at
+the upstream issue). Bugs in the bridge, UI, assets, or build are studio bugs and stay
+here; bugs in how Scheme code evaluates are upstream.
+
 ## Layout map
 
 | Path | Role |
