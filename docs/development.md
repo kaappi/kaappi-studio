@@ -14,7 +14,7 @@ Day-to-day workflows for contributors: building, testing, linting, CI, and commo
 | Coverage reports (Kover HTML) | `./gradlew :shared:koverHtmlReport :app:koverHtmlReport` |
 | Android release AAB + APK | `./gradlew assembleRelease bundleRelease` (needs signing — see [Release](release.md)) |
 | Regenerate Xcode project | `cd iosApp && xcodegen generate` |
-| iOS build (CLI) | `xcodebuild build -project iosApp/KaappiStudio.xcodeproj -scheme KaappiStudio -destination 'platform=iOS Simulator,name=iPhone 16' CODE_SIGNING_ALLOWED=NO` |
+| iOS build (CLI) | `xcodebuild build -project iosApp/KaappiStudio.xcodeproj -scheme KaappiStudio -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO` |
 
 Gradle is configured with the configuration cache, parallel execution, and build caching
 (`gradle.properties`) — most incremental builds are fast.
@@ -38,7 +38,7 @@ GitHub Actions runs two workflows on every push/PR to `main`:
 
 ### [iOS CI](../.github/workflows/ios.yml) (`macos-latest`)
 
-1. `xcodebuild build` for the iPhone 16 simulator (`CODE_SIGNING_ALLOWED=NO`)
+1. `xcodebuild build` for the iPhone 17 simulator (`CODE_SIGNING_ALLOWED=NO`)
 2. `xcodebuild test` (same destination)
 
 Notes / gaps to be aware of:

@@ -22,7 +22,7 @@ jobs:
           xcodebuild build \
             -project KaappiStudio.xcodeproj \
             -scheme KaappiStudio \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO
 
@@ -32,5 +32,5 @@ jobs:
           xcodebuild test \
             -project KaappiStudio.xcodeproj \
             -scheme KaappiStudio \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
             CODE_SIGNING_ALLOWED=NO

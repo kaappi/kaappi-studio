@@ -22,7 +22,7 @@ platforms. Full documentation lives in [`docs/`](docs/README.md) — read
 # iOS (Xcode project is generated — do not hand-edit project.pbxproj)
 cd iosApp && xcodegen generate     # REQUIRED after adding/removing/moving files under iosApp/
 xcodebuild build -project iosApp/KaappiStudio.xcodeproj -scheme KaappiStudio \
-  -destination 'platform=iOS Simulator,name=iPhone 16' CODE_SIGNING_ALLOWED=NO
+  -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO
 ```
 
 Versions are centralized in `gradle/libs.versions.toml` (version catalog). JDK 17+.
