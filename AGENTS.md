@@ -49,7 +49,10 @@ Versions are centralized in `gradle/libs.versions.toml` (version catalog). JDK 1
 - **Example programs are duplicated:** Android reads
   `shared/src/commonMain/.../data/ExampleRepository.kt`; iOS reads
   `iosApp/KaappiStudio/Helpers/Examples.swift`. Any example change must land in both,
-  with matching id/title/description/category/code.
+  with matching id/title/description/category/code. CI enforces this on every push
+  (`scripts/check-examples-parity.py`; see [docs/development.md](docs/development.md)),
+  which also caps per-example code size — keep example workloads small enough to run
+  on iOS's main-thread WASM.
 - **Test layout:** unit tests run on the JVM — `shared/src/commonTest/` (repository
   integrity, serialization; runs via `:shared:testAndroidHostTest`) and
   `app/src/test/` (bridge, runner, viewmodels; runs via `./gradlew test`). Keep new

@@ -13,6 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Runs unconditionally (no path filter): Examples.swift is iOS code, but
+      # a Swift-only edit must still fail here when the two copies drift, and
+      # Android CI is the only workflow that runs the check.
       - name: Check example parity (Kotlin vs Swift)
         run: python3 scripts/check-examples-parity.py
 
