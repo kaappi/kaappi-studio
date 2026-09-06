@@ -11,6 +11,15 @@ struct SchemeWebView: UIViewRepresentable {
         Coordinator(editorViewModel: editorViewModel)
     }
 
+    static func dismantleUIView(_ uiView: WKWebView, coordinator: Coordinator) {
+        // Teardown for the retain chain EditorViewModel -> WKWebView ->
+        // WKUserContentController -> Coordinator. The Coordinator only holds the
+        // view model weakly (breaking the cycle), but the content controller
+        // keeps the Coordinator alive until the handler is removed, so drop it
+        // explicitly when the editor leaves the hierarchy for good.
+        uiView.configuration.userContentController.removeScriptMessageHandler(forName: "kaappi")
+    }
+
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
@@ -39,7 +48,11 @@ struct SchemeWebView: UIViewRepresentable {
     }
 
     class Coordinator: NSObject, WKScriptMessageHandler {
-        let editorViewModel: EditorViewModel
+        // Weak on purpose: the content controller retains this Coordinator, and
+        // the view model retains the WKWebView, so a strong reference here would
+        // form a retain cycle (view model -> web view -> content controller ->
+        // coordinator -> view model).
+        weak var editorViewModel: EditorViewModel?
 
         init(editorViewModel: EditorViewModel) {
             self.editorViewModel = editorViewModel
@@ -54,7 +67,7 @@ struct SchemeWebView: UIViewRepresentable {
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let event = json["event"] as? String else { return }
 
-            let vm = editorViewModel
+            guard let vm = editorViewModel else { return }
             Task { @MainActor in
                 switch event {
                 case "ready":
@@ -62,6 +75,13 @@ struct SchemeWebView: UIViewRepresentable {
                 case "runStart":
                     vm.isRunning = true
                     vm.hasResult = false
+                    // Drop the previous run's output up front: a run that fails
+                    // in the instantiate phase only reports runError, and the
+                    // output panel must not show the last successful run's
+                    // stdout/elapsed next to it.
+                    vm.lastStdout = ""
+                    vm.lastStderr = ""
+                    vm.lastElapsed = 0
                 case "runComplete":
                     vm.isRunning = false
                     vm.lastStdout = json["stdout"] as? String ?? ""
@@ -70,6 +90,11 @@ struct SchemeWebView: UIViewRepresentable {
                     vm.hasResult = true
                 case "runError":
                     vm.isRunning = false
+                    // Clear stdout/elapsed so only this run's error shows; a
+                    // runStart already cleared the previous result, but keep
+                    // runError self-sufficient in case events are reordered.
+                    vm.lastStdout = ""
+                    vm.lastElapsed = 0
                     vm.lastStderr = json["error"] as? String ?? "Unknown error"
                     vm.hasResult = true
                 default:
