@@ -111,8 +111,9 @@ cd iosApp && xcodegen generate
 - Android: `./gradlew assembleDebug` succeeds and the app launches; pressing **Run**
   in the Editor tab prints `Hello from Kaappi!`
 - iOS: the app builds in Xcode and the Editor tab behaves the same
-- CI parity: `./gradlew test` (Android) and the `KaappiStudio` scheme test action (iOS)
-  are what GitHub Actions runs — see [Development](development.md#continuous-integration)
+- CI parity: `./gradlew test :shared:testAndroidHostTest` (Android) and the
+  `KaappiStudio` scheme test action (iOS) are what GitHub Actions runs — see
+  [Development](development.md#testing)
 
 ## Next steps
 

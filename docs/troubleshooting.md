@@ -6,8 +6,8 @@ Known gotchas in this repository. If you hit something not listed here, consider
 
 **Symptoms:**
 
-- Android: app builds and runs, but pressing **Run** shows a `Runtime error: …` in the
-  output pane (the `kaappi.wasm` asset could not be opened by `SchemeRunner`).
+- Android: app builds and runs, but pressing **Run** shows an error in the output pane
+  (the raw asset-not-found message from `SchemeRunner`, e.g. `kaappi.wasm`).
 - iOS: editor works, but Run silently produces no output; the WebView console shows
   `Failed to load WASM` (the fetch in `bridge.js` failed — also happens in **iOS CI**
   builds, which never fetch the binary).

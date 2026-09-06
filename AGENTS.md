@@ -14,8 +14,10 @@ platforms. Full documentation lives in [`docs/`](docs/README.md) — read
 # Android (from repo root)
 ./gradlew assembleDebug            # build debug APK
 ./gradlew installDebug             # install on connected device/emulator
-./gradlew test                     # unit tests (CI runs this)
-./gradlew :app:detekt              # static analysis
+./gradlew test                     # app unit tests
+./gradlew :shared:testAndroidHostTest   # shared commonTest suite (JVM, no emulator)
+./gradlew :app:detekt              # static analysis (baseline in app/detekt-baseline.xml)
+./gradlew :shared:koverHtmlReport :app:koverHtmlReport   # coverage reports
 
 # iOS (Xcode project is generated — do not hand-edit project.pbxproj)
 cd iosApp && xcodegen generate     # REQUIRED after adding/removing/moving files under iosApp/
@@ -44,9 +46,12 @@ Versions are centralized in `gradle/libs.versions.toml` (version catalog). JDK 1
   `shared/src/commonMain/.../data/ExampleRepository.kt`; iOS reads
   `iosApp/KaappiStudio/Helpers/Examples.swift`. Any example change must land in both,
   with matching id/title/description/category/code.
-- **Tests are vacuous:** no unit test sources exist yet on either platform;
-  `./gradlew test` and the iOS test action pass without exercising code. Do not treat a
-  green test run as validation — verify changes by building and running.
+- **Test layout:** unit tests run on the JVM — `shared/src/commonTest/` (repository
+  integrity, serialization; runs via `:shared:testAndroidHostTest`) and
+  `app/src/test/` (bridge, runner, viewmodels; runs via `./gradlew test`). Keep new
+  detekt violations out of `app/detekt-baseline.xml` — extend it only for existing-code
+  refactors, never to make new code pass. Compose UI (`ui/screens`, `ui/theme`) is
+  untested and needs instrumentation tests.
 - **Never commit secrets or binaries:** `keystore.properties`, `*.jks`,
   `app/play-service-account.json`, and all `kaappi.wasm` paths are gitignored. Keep it
   that way.
@@ -88,8 +93,9 @@ Versions are centralized in `gradle/libs.versions.toml` (version catalog). JDK 1
 
 ## Before you finish a change
 
-1. Android changes: `./gradlew assembleDebug` (and `:app:detekt`) pass.
+1. Android changes: `./gradlew assembleDebug test :shared:testAndroidHostTest :app:detekt` pass.
 2. iOS changes: the `xcodebuild build` command above passes, and `xcodegen generate`
    was run if files moved.
 3. Shared asset or protocol changes: both platform copies updated and consistent.
-4. Docs: if you changed behavior described in `docs/`, update the relevant page.
+4. Behavior changes: extend/adjust the relevant unit tests (see Test layout above).
+5. Docs: if you changed behavior described in `docs/`, update the relevant page.

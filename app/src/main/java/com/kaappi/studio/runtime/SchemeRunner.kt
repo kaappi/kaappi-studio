@@ -12,14 +12,18 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 
-class SchemeRunner(private val context: Context) {
+class SchemeRunner(
+    private val context: Context,
+    private val moduleLoader: () -> ByteArray = {
+        context.assets.open("kaappi.wasm").use { it.readBytes() }
+    },
+) {
 
     private var parsedModule: com.dylibso.chicory.wasm.WasmModule? = null
 
     private fun getModule(): com.dylibso.chicory.wasm.WasmModule {
         parsedModule?.let { return it }
-        val bytes = context.assets.open("kaappi.wasm").use { it.readBytes() }
-        val module = Parser.parse(bytes)
+        val module = Parser.parse(moduleLoader())
         parsedModule = module
         return module
     }

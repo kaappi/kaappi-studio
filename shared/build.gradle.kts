@@ -6,12 +6,11 @@ plugins {
 }
 
 kotlin {
-    jvm()
-
     android {
         namespace = "com.kaappi.studio.shared"
         compileSdk = libs.versions.compileSdk.get().toInt()
         minSdk = libs.versions.minSdk.get().toInt()
+        withHostTest { }
     }
 
     listOf(

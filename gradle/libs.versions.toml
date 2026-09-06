@@ -17,6 +17,7 @@ chicory = "1.7.5"
 jimfs = "1.3.0"
 
 junit = "4.13.2"
+mockito = "5.14.2"
 kover = "0.9.8"
 detekt = "1.23.8"
 
@@ -39,7 +40,10 @@ webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+
+mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
 
 chicory-runtime = { group = "com.dylibso.chicory", name = "runtime", version.ref = "chicory" }
 chicory-wasi = { group = "com.dylibso.chicory", name = "wasi", version.ref = "chicory" }

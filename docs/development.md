@@ -8,10 +8,11 @@ Day-to-day workflows for contributors: building, testing, linting, CI, and commo
 |------|---------|
 | Android debug APK | `./gradlew assembleDebug` |
 | Android install on device | `./gradlew installDebug` |
-| Android release AAB + APK | `./gradlew assembleRelease bundleRelease` (needs signing — see [Release](release.md)) |
-| Android unit tests | `./gradlew test` (CI runs this) |
+| Android unit tests | `./gradlew test` |
+| Shared module tests (commonTest on Android host) | `./gradlew :shared:testAndroidHostTest` |
 | Detekt static analysis (`:app`) | `./gradlew :app:detekt` |
-| Shared module coverage (Kover) | `./gradlew :shared:koverHtmlReport` |
+| Coverage reports (Kover HTML) | `./gradlew :shared:koverHtmlReport :app:koverHtmlReport` |
+| Android release AAB + APK | `./gradlew assembleRelease bundleRelease` (needs signing — see [Release](release.md)) |
 | Regenerate Xcode project | `cd iosApp && xcodegen generate` |
 | iOS build (CLI) | `xcodebuild build -project iosApp/KaappiStudio.xcodeproj -scheme KaappiStudio -destination 'platform=iOS Simulator,name=iPhone 16' CODE_SIGNING_ALLOWED=NO` |
 
@@ -31,8 +32,9 @@ GitHub Actions runs two workflows on every push/PR to `main`:
 1. JDK 17 (Temurin) + Gradle setup
 2. `bash scripts/fetch-wasm.sh`
 3. `./gradlew assembleDebug`
-4. `./gradlew test`
-5. Uploads the debug APK as an artifact
+4. `./gradlew test :shared:testAndroidHostTest :app:detekt`
+5. Coverage reports via `:shared:koverHtmlReport :app:koverHtmlReport`, uploaded as an
+   artifact alongside the debug APK
 
 ### [iOS CI](../.github/workflows/ios.yml) (`macos-latest`)
 
@@ -43,12 +45,46 @@ Notes / gaps to be aware of:
 
 - **iOS CI never fetches `kaappi.wasm`** (and it's gitignored), so CI-built iOS apps
   compile fine but cannot execute Scheme at runtime. Fetch it manually for local work.
-- Neither workflow runs Detekt.
-- There are currently **no unit test sources** on either platform; `./gradlew test` and
-  the iOS test action pass vacuously. Test dependencies (JUnit 4, Compose UI test,
-  kotlinx-coroutines-test via commonTest) are already wired up — new tests just work.
-- Kover is applied to `:shared`; Detekt is applied to `:app` with the default rule set
-  (no custom config file).
+- The iOS app itself has no test sources yet (the `KaappiStudioTests` target exists but
+  is empty).
+
+## Testing
+
+Unit tests live in two places and run on the JVM (no emulator needed):
+
+| Location | Contents | Task |
+|----------|----------|------|
+| `shared/src/commonTest/` | `ExampleRepository` integrity, `SchemeFile` serialization | `:shared:testAndroidHostTest` |
+| `app/src/test/` | `KaappiBridge` message handling, `SchemeRunner` execution paths, `EditorViewModel` state | `:app:testDebugUnitTest` (or `:app:test`) |
+
+Conventions:
+
+- `SchemeRunner` takes an injectable `moduleLoader` lambda; tests pass an in-memory WASM
+  module instead of reading the gitignored `kaappi.wasm` asset.
+- `EditorViewModel` tests use `kotlinx-coroutines-test` (`Dispatchers.setMain`) because
+  `viewModelScope` needs a Main dispatcher on the JVM.
+- Android framework interactions in tests use Mockito (`contextWithCacheDir` helper).
+
+The Compose UI (`ui/screens`, `ui/theme`) has no unit tests — it needs instrumentation
+tests (`androidTest`) or Robolectric, which the project doesn't use yet.
+
+## Coverage
+
+Kover measures both modules; CI uploads the HTML reports as artifacts:
+
+```bash
+./gradlew :shared:koverHtmlReport :app:koverHtmlReport
+# → shared/build/reports/kover/html/index.html
+# → app/build/reports/kover/html/index.html
+```
+
+The logic layers (bridge, runner, viewmodels, shared domain/data) are covered; the
+Compose UI is not, so module-level percentages are dominated by UI code — read the
+per-package breakdown instead.
+
+Detekt on `:app` runs with the default rule set; the pre-existing violations are frozen
+in `app/detekt-baseline.xml` (generated with `:app:detektBaseline`). New code must be
+baseline-clean — don't regenerate the baseline to make new violations pass.
 
 ## Common contributor tasks
 
