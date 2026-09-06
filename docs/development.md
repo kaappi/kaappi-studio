@@ -103,12 +103,10 @@ an iOS file (if new), regenerate the Xcode project.
 
 ```bash
 bash scripts/fetch-wasm.sh <version>
-cp app/src/main/assets/webview/kaappi.wasm app/src/main/assets/kaappi.wasm
-cp app/src/main/assets/webview/kaappi.wasm iosApp/KaappiStudio/Resources/webview/kaappi.wasm
 ```
 
-(The copies are needed because of the [placement quirk](troubleshooting.md#missing-or-misplaced-wasm-binary);
-all three paths are gitignored.)
+The script writes the binary to all three gitignored paths the platforms read
+(Android assets root, Android webview assets, iOS webview resources).
 
 ### Change the editor (keymap, highlighting, theme palettes)
 
