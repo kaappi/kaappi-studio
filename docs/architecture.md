@@ -152,7 +152,7 @@ Both apps load the same `index.html`, which loads `bridge.js` as a module.
 `codemirror-bundle.mjs`) and exposes the `window.kaappiAPI` object the native side calls
 into. The full message contract is in [Bridge Protocol](bridge-protocol.md).
 
-Asset locations — **kept in sync manually**:
+Asset locations — **kept in sync**, enforced by `scripts/check-webview-assets.sh` in CI:
 
 | File | Android | iOS |
 |------|---------|-----|
@@ -161,7 +161,8 @@ Asset locations — **kept in sync manually**:
 | `kaappi.wasm` | assets root (`app/src/main/assets/kaappi.wasm`), read by `SchemeRunner` | `Resources/webview/kaappi.wasm`, fetched by `bridge.js` |
 | `worker.js`, `runner.js`, `wasi-shim-bundle.mjs` | not present | present; **only `wasi-shim-bundle.mjs` is currently used** (`bridge.js` imports it directly — `worker.js`/`runner.js` are not wired into `index.html`) |
 
-When you change a shared file (e.g. `editor.js`), copy it to **both** locations.
+When you change a shared file (e.g. `editor.js`), copy it to **both** locations;
+`bash scripts/check-webview-assets.sh` fails if the copies differ.
 
 ## Navigation & UI structure
 
