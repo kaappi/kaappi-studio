@@ -2,11 +2,13 @@ package com.kaappi.studio.data
 
 import com.kaappi.studio.contextWithFilesDir
 import java.io.File
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -22,8 +24,14 @@ class FileRepositoryTest {
         return FileRepository(contextWithFilesDir(filesDir)) to File(filesDir, "schemes")
     }
 
+    /** `assertThrows` for suspend calls: the repository API is suspend-only (issue #12). */
+    private inline fun <reified T : Throwable> assertThrowsSuspend(
+        message: String? = null,
+        crossinline block: suspend () -> Unit,
+    ): T = assertThrows(message, T::class.java) { runBlocking { block() } }
+
     @Test
-    fun writeFile_acceptsValidNames_andAppendsScmOnce() {
+    fun writeFile_acceptsValidNames_andAppendsScmOnce() = runBlocking<Unit> {
         val (repo, dir) = newRepository()
 
         assertEquals("hello", repo.writeFile("hello", "v1").name)
@@ -42,7 +50,7 @@ class FileRepositoryTest {
         val (repo, _) = newRepository()
 
         for (bad in listOf("", "   ", "foo/bar", "../x", "..", ".", "a\\b", "foo.bar", "a:b")) {
-            assertThrows("name '$bad' must be rejected", IllegalArgumentException::class.java) {
+            assertThrowsSuspend<IllegalArgumentException>("name '$bad' must be rejected") {
                 repo.writeFile(bad, "x")
             }
         }
@@ -53,7 +61,7 @@ class FileRepositoryTest {
         val (repo, dir) = newRepository()
 
         for (bad in listOf("foo/bar", "../x", "..")) {
-            assertThrows(IllegalArgumentException::class.java) { repo.writeFile(bad, "x") }
+            assertThrowsSuspend<IllegalArgumentException> { repo.writeFile(bad, "x") }
         }
 
         assertTrue(
@@ -63,7 +71,7 @@ class FileRepositoryTest {
     }
 
     @Test
-    fun writeFile_overwritesAndLeavesNoTempFilesBehind() {
+    fun writeFile_overwritesAndLeavesNoTempFilesBehind() = runBlocking<Unit> {
         val (repo, dir) = newRepository()
 
         repo.writeFile("hello", "v1")
@@ -82,37 +90,70 @@ class FileRepositoryTest {
         // every write must fail with an IOException, wrapped by the repository.
         val repo = FileRepository(contextWithFilesDir(tmp.newFile("blocker")))
 
-        assertThrows(FileRepositoryException::class.java) { repo.writeFile("hello", "x") }
+        assertThrowsSuspend<FileRepositoryException> { repo.writeFile("hello", "x") }
     }
 
     @Test
     fun readFile_throwsOnMissingOrUnreadableFile() {
         val (repo, _) = newRepository()
 
-        assertThrows(FileRepositoryException::class.java) { repo.readFile("/no/such/file.scm") }
+        assertThrowsSuspend<FileRepositoryException> { repo.readFile("/no/such/file.scm") }
     }
 
     @Test
-    fun readFile_decodesInvalidUtf8Lossily() {
+    fun readFile_decodesInvalidUtf8Lossily() = runBlocking<Unit> {
         val (repo, dir) = newRepository()
+        repo.listFiles() // creates the directory
         val file = File(dir, "bad.scm").apply { writeBytes(byteArrayOf(0x28, 0xFF.toByte(), 0x29)) }
 
         assertEquals("(\uFFFD)", repo.readFile(file.absolutePath))
     }
 
     @Test
-    fun listFiles_keepsNonUtf8FilesVisibleWithLossyContent() {
+    fun listFiles_returnsNamesAndMtimesWithoutContents() = runBlocking<Unit> {
         val (repo, dir) = newRepository()
-        File(dir, "bad.scm").writeBytes(byteArrayOf(0xFF.toByte(), 0xFE.toByte()))
+        repo.writeFile("newer", "(display 2)")
+        val older = File(dir, "older.scm").apply {
+            writeText("(display 1)")
+            setLastModified(System.currentTimeMillis() - 60_000)
+        }
 
         val files = repo.listFiles()
 
-        assertEquals(1, files.size)
-        assertEquals("\uFFFD\uFFFD", files[0].content)
+        assertEquals(listOf("newer", "older"), files.map { it.name })
+        assertEquals(older.absolutePath, files[1].path)
+        assertEquals(older.lastModified(), files[1].lastModified)
     }
 
     @Test
-    fun renameFile_refusesToOverwriteAnExistingDestination() {
+    fun listFiles_keepsNonUtf8FilesVisible() = runBlocking<Unit> {
+        val (repo, dir) = newRepository()
+        repo.listFiles() // creates the directory
+        File(dir, "bad.scm").writeBytes(byteArrayOf(0xFF.toByte(), 0xFE.toByte()))
+
+        assertEquals(listOf("bad"), repo.listFiles().map { it.name })
+    }
+
+    @Test
+    fun listFiles_keepsUnreadableFilesVisible_andReadFileReportsThem() = runBlocking<Unit> {
+        // Contract (issue #12): listing never reads contents, so an unreadable
+        // file stays listed and deletable; opening it is what fails.
+        val (repo, dir) = newRepository()
+        repo.listFiles() // creates the directory
+        val locked = File(dir, "locked.scm").apply {
+            writeText("secret")
+            setReadable(false)
+        }
+        // Root (and some CI file systems) ignore permission bits; the case is
+        // then untestable here rather than failing.
+        assumeFalse("file must be unreadable for this test", locked.canRead())
+
+        assertEquals(listOf("locked"), repo.listFiles().map { it.name })
+        assertThrowsSuspend<FileRepositoryException> { repo.readFile(locked.absolutePath) }
+    }
+
+    @Test
+    fun renameFile_refusesToOverwriteAnExistingDestination() = runBlocking<Unit> {
         val (repo, dir) = newRepository()
         val a = repo.writeFile("a", "AAA")
         repo.writeFile("b", "BBB")
@@ -124,7 +165,7 @@ class FileRepositoryTest {
     }
 
     @Test
-    fun renameFile_movesWhenTheDestinationIsFree() {
+    fun renameFile_movesWhenTheDestinationIsFree() = runBlocking<Unit> {
         val (repo, dir) = newRepository()
         val a = repo.writeFile("a", "AAA")
 
@@ -136,7 +177,7 @@ class FileRepositoryTest {
     }
 
     @Test
-    fun renameFile_toItsOwnNameIsANoOpSuccess() {
+    fun renameFile_toItsOwnNameIsANoOpSuccess() = runBlocking<Unit> {
         val (repo, dir) = newRepository()
         val a = repo.writeFile("a", "AAA")
 
@@ -147,23 +188,27 @@ class FileRepositoryTest {
     }
 
     @Test
-    fun repositoryInit_sweepsStaleTempFilesButKeepsRealFiles() {
+    fun firstUse_sweepsStaleTempFilesButKeepsRealFiles() = runBlocking<Unit> {
         val filesDir = tmp.newFolder()
         val dir = File(filesDir, "schemes").apply { mkdirs() }
         File(dir, "crash.scm.tmp").writeText("partial write from a crashed save")
         File(dir, "keep.scm").writeText("real")
 
-        FileRepository(contextWithFilesDir(filesDir))
+        // The sweep is deferred to the first operation so construction (on
+        // the main thread, in the ViewModel factory) does no I/O (issue #12).
+        val repo = FileRepository(contextWithFilesDir(filesDir))
+        assertTrue("construction must not touch the disk", File(dir, "crash.scm.tmp").exists())
+        repo.listFiles()
 
-        assertFalse("stale atomic-write temp files must be swept at init", File(dir, "crash.scm.tmp").exists())
+        assertFalse("stale atomic-write temp files must be swept at first use", File(dir, "crash.scm.tmp").exists())
         assertEquals("real files must survive the sweep", "real", File(dir, "keep.scm").readText())
     }
 
     @Test
-    fun renameFile_rejectsInvalidNames() {
+    fun renameFile_rejectsInvalidNames() = runBlocking<Unit> {
         val (repo, _) = newRepository()
         val a = repo.writeFile("a", "AAA")
 
-        assertThrows(IllegalArgumentException::class.java) { repo.renameFile(a.path, "x/y") }
+        assertThrowsSuspend<IllegalArgumentException> { repo.renameFile(a.path, "x/y") }
     }
 }
