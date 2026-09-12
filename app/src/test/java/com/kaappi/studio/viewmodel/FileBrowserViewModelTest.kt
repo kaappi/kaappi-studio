@@ -2,6 +2,7 @@ package com.kaappi.studio.viewmodel
 
 import com.kaappi.studio.contextWithFilesDir
 import com.kaappi.studio.data.FileRepository
+import com.kaappi.studio.data.FileRepositoryException
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -59,5 +60,30 @@ class FileBrowserViewModelTest {
 
         assertThrows(IllegalArgumentException::class.java) { vm.saveFile("foo/bar", "") }
         assertTrue(vm.files.value.isEmpty())
+    }
+
+    @Test
+    fun deleteFile_removesTheFileAndRefreshesTheList() {
+        val (vm, dir) = newViewModel()
+        val saved = vm.saveFile("gone", "(display 1)")
+
+        vm.deleteFile(saved.path)
+
+        assertFalse(File(dir, "gone.scm").exists())
+        assertFalse(vm.files.value.any { it.name == "gone" })
+    }
+
+    @Test
+    fun deleteFile_throwsWhenNothingWasDeletedInsteadOfFabricatingSuccess() {
+        // The caller resets editor state after a delete; it must never do so
+        // for a file that is still on disk (issue #15).
+        val (vm, dir) = newViewModel()
+        vm.saveFile("keep", "(display 1)")
+
+        assertThrows(FileRepositoryException::class.java) {
+            vm.deleteFile(File(dir, "missing.scm").absolutePath)
+        }
+
+        assertTrue("the list must still reflect the disk", vm.files.value.any { it.name == "keep" })
     }
 }

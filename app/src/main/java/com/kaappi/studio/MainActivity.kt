@@ -424,17 +424,25 @@ private fun KaappiStudioApp(
                                 showFileError("Could not create file", e)
                             }
                         },
-                        onFileDeleted = { file ->
-                            // SchemeFile.name and currentFileName are both
-                            // stored as base names without the .scm extension,
-                            // so they compare directly. Resetting the pending
-                            // code queues an empty document that replaces the
-                            // deleted file's content next time the editor is
-                            // shown, and clearing the name drops it from the
-                            // title and the save-dialog prefill (issue #15).
-                            if (file.name == editorVM.currentFileName.value) {
-                                editorVM.setPendingCode("")
-                                editorVM.setCurrentFile(null)
+                        onDeleteFile = { file ->
+                            try {
+                                fileBrowserVM.deleteFile(file.path)
+                                // Only reached when the file is really gone.
+                                // SchemeFile.name and currentFileName are both
+                                // stored as base names without the .scm
+                                // extension, so they compare directly. Resetting
+                                // the pending code queues an empty document that
+                                // replaces the deleted file's content next time
+                                // the editor is shown, and clearing the name
+                                // drops it from the title and the save-dialog
+                                // prefill (issue #15).
+                                if (file.name == editorVM.currentFileName.value) {
+                                    editorVM.setPendingCode("")
+                                    editorVM.setCurrentFile(null)
+                                    editorVM.clearOutput()
+                                }
+                            } catch (e: FileRepositoryException) {
+                                showFileError("Could not delete file", e)
                             }
                         },
                         modifier = Modifier
