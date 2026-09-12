@@ -45,7 +45,7 @@ fun FileBrowserScreen(
     viewModel: FileBrowserViewModel,
     onFileSelected: (SchemeFile) -> Unit,
     onNewFile: (String) -> Unit,
-    onFileDeleted: (SchemeFile) -> Unit,
+    onDeleteFile: (SchemeFile) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val files by viewModel.files.collectAsState()
@@ -110,9 +110,11 @@ fun FileBrowserScreen(
             text = { Text("This cannot be undone.") },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.deleteFile(file.path)
-                    onFileDeleted(file)
                     deleteTarget = null
+                    // Like onNewFile, the caller performs the delete: it owns
+                    // the editor state that must only reset on success and the
+                    // snackbar that reports a failure.
+                    onDeleteFile(file)
                 }) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
