@@ -2,13 +2,14 @@ import { createSchemeEditor } from "./editor.js";
 
 let editor = null;
 
-const isDark = document.body.classList.contains("theme-dark");
-
 async function init() {
   editor = await createSchemeEditor({
     parent: document.getElementById("editor-container"),
     doc: '(display "Hello from Kaappi!")\n(newline)\n',
-    isDark,
+    // Read the body class now, not at module load: a setTheme that arrives
+    // before the editor exists has already updated it, so the editor is
+    // created in the right theme instead of index.html's default.
+    isDark: document.body.classList.contains("theme-dark"),
     onRun: () => {},
   });
   notifyNative("ready", {});
@@ -45,7 +46,8 @@ window.kaappiAPI = {
     document.body.className = `theme-${themeName}`;
     // Body class alone is not enough: CodeMirror's caret color, dark flag and
     // highlight palette are configured in editor.js and need reconfiguring
-    // too (issue #7).
+    // too (issue #7). Before init() finishes there is no editor yet; the body
+    // class set above is picked up when it is created.
     if (editor) editor.setTheme(themeName === "dark");
   },
 

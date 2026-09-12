@@ -39,13 +39,15 @@ Versions are centralized in `gradle/libs.versions.toml` (version catalog). JDK 1
   The Android webview assets do not need it — Android executes via Chicory from the
   assets root. Without it, Android's Run button fails at runtime and iOS produces no
   output. iOS CI never fetches it — CI-built iOS artifacts cannot execute Scheme.
-- **Two copies of the webview assets, kept in sync manually:**
+- **Two copies of the webview assets, kept in sync:**
   `app/src/main/assets/webview/` and `iosApp/KaappiStudio/Resources/webview/` both
   contain `index.html`, `bridge.js`, `editor.js`, `styles.css`,
-  `codemirror-bundle.mjs`. Changes must be applied to both. **Exception:** `bridge.js`
-  intentionally differs — the Android variant is editor-only; the iOS variant
-  pre-compiles WASM and implements `runCode()`. See
-  [docs/bridge-protocol.md](docs/bridge-protocol.md).
+  `codemirror-bundle.mjs`. Changes must be applied to both. CI enforces this on every
+  push (`scripts/check-webview-assets.sh`, run from the Android workflow; see
+  [docs/development.md](docs/development.md)) — every file in the Android copy must
+  be byte-identical on iOS. **Exception:** `bridge.js` intentionally differs — the
+  Android variant is editor-only; the iOS variant pre-compiles WASM and implements
+  `runCode()`. See [docs/bridge-protocol.md](docs/bridge-protocol.md).
 - **Example programs are duplicated:** Android reads
   `shared/src/commonMain/.../data/ExampleRepository.kt`; iOS reads
   `iosApp/KaappiStudio/Helpers/Examples.swift`. Any example change must land in both,

@@ -134,6 +134,17 @@ Edit `editor.js` / `styles.css` in **both** `app/src/main/assets/webview/` and
 module — regenerate it only if you need a different CodeMirror version, and copy it to
 both locations.
 
+A CI check (in the Android workflow, so it runs on Swift-only changes too) compares
+the two copies byte-for-byte on every push and pull request — run it locally with:
+
+```bash
+bash scripts/check-webview-assets.sh
+```
+
+Every file in the Android copy must exist in the iOS copy and be identical, so a new
+shared asset forgotten on iOS fails the check as well. `bridge.js` is excluded (the
+two variants differ by design), and iOS-only files are allowed.
+
 ### Change native ↔ WebView messaging
 
 Update, in lockstep:
