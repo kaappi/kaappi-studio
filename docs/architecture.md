@@ -59,11 +59,15 @@ execute the same `kaappi.wasm` binary and feed it the program as `program.scm` o
   - `SettingsRepository` — theme mode, font size, last opened file
 
   Both actuals obey the behavior contract documented in the `expect` KDoc:
-  centrally sanitized file names ([A-Za-z0-9_\- ], via `SchemeFileNames`),
-  atomic writes, `readFile` throwing on missing/unreadable files (never
-  returning ""), `renameFile` refusing to overwrite an existing destination,
-  lossy U+FFFD decoding of non-UTF-8 content in `listFiles`, theme fallback to
-  SYSTEM on unknown stored values, and font-size clamping to 10–24 (default 14).
+  every `FileRepository` operation is a `suspend` function that does its disk
+  I/O on `Dispatchers.IO` so the main thread never blocks (issue #12);
+  `listFiles` returns names, paths and modification times without reading any
+  file's contents (`SchemeFile` carries none — open with `readFile`);
+  centrally sanitized file names ([A-Za-z0-9_\- ], via `SchemeFileNames`);
+  atomic writes; `readFile` throwing on missing/unreadable files (never
+  returning "") and decoding non-UTF-8 content lossily (U+FFFD); `renameFile`
+  refusing to overwrite an existing destination; theme fallback to SYSTEM on
+  unknown stored values; and font-size clamping to 10–24 (default 14).
 
 Platform `actual` implementations:
 

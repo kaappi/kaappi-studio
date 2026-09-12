@@ -57,6 +57,7 @@ import com.kaappi.studio.data.FileRepository
 import com.kaappi.studio.data.FileRepositoryException
 import com.kaappi.studio.data.SchemeFileNames
 import com.kaappi.studio.data.SettingsRepository
+import com.kaappi.studio.domain.SchemeFile
 import com.kaappi.studio.domain.ThemeMode
 import com.kaappi.studio.runtime.SchemeRunner
 import com.kaappi.studio.ui.screens.EditorScreen
@@ -249,16 +250,89 @@ private fun KaappiStudioApp(
         }
     }
 
-    val createEmptyFile = { name: String ->
-        try {
-            val saved = fileBrowserVM.saveFile(name, "")
-            editorVM.setCurrentFile(saved.name)
-            editorVM.setPendingCode("")
-            currentSection = NavSection.EDITOR
-        } catch (e: FileRepositoryException) {
-            showFileError("Could not create file", e)
-        } catch (e: IllegalArgumentException) {
-            showFileError("Could not create file", e)
+    // File operations are suspend functions whose I/O runs on Dispatchers.IO
+    // inside the repository (issue #12): each is launched on the composition
+    // scope, so click handlers and JS callbacks never block the main thread.
+    // State updates run back on Main after the I/O completes.
+    fun createEmptyFile(name: String) {
+        scope.launch {
+            try {
+                val saved = fileBrowserVM.saveFile(name, "")
+                editorVM.setCurrentFile(saved.name)
+                editorVM.setPendingCode("")
+                currentSection = NavSection.EDITOR
+            } catch (e: FileRepositoryException) {
+                showFileError("Could not create file", e)
+            } catch (e: IllegalArgumentException) {
+                showFileError("Could not create file", e)
+            }
+        }
+    }
+
+    fun openFile(file: SchemeFile) {
+        scope.launch {
+            try {
+                // Listing no longer carries contents (issue #12): read on open,
+                // and switch to the editor only once the read succeeded so a
+                // failed open never shows an empty document under the file's
+                // name (which the next save would persist).
+                val content = fileBrowserVM.readFile(file.path)
+                editorVM.setPendingCode(content)
+                editorVM.setCurrentFile(file.name)
+                editorVM.clearOutput()
+                currentSection = NavSection.EDITOR
+            } catch (e: FileRepositoryException) {
+                showFileError("Could not open file", e)
+            }
+        }
+    }
+
+    fun newFile(name: String) {
+        scope.launch {
+            try {
+                if (fileBrowserVM.fileExists(name)) {
+                    overwriteTarget = SchemeFileNames.sanitize(name)
+                } else {
+                    createEmptyFile(name)
+                }
+            } catch (e: IllegalArgumentException) {
+                showFileError("Could not create file", e)
+            }
+        }
+    }
+
+    fun deleteFile(file: SchemeFile) {
+        scope.launch {
+            try {
+                fileBrowserVM.deleteFile(file.path)
+                // Only reached when the file is really gone. SchemeFile.name
+                // and currentFileName are both stored as base names without
+                // the .scm extension, so they compare directly. Resetting the
+                // pending code queues an empty document that replaces the
+                // deleted file's content next time the editor is shown, and
+                // clearing the name drops it from the title and the
+                // save-dialog prefill (issue #15).
+                if (file.name == editorVM.currentFileName.value) {
+                    editorVM.setPendingCode("")
+                    editorVM.setCurrentFile(null)
+                    editorVM.clearOutput()
+                }
+            } catch (e: FileRepositoryException) {
+                showFileError("Could not delete file", e)
+            }
+        }
+    }
+
+    fun saveEditorCode(name: String, code: String) {
+        scope.launch {
+            try {
+                val saved = fileBrowserVM.saveFile(name, code)
+                editorVM.setCurrentFile(saved.name)
+            } catch (e: FileRepositoryException) {
+                showFileError("Could not save file", e)
+            } catch (e: IllegalArgumentException) {
+                showFileError("Could not save file", e)
+            }
         }
     }
 
@@ -407,44 +481,9 @@ private fun KaappiStudioApp(
                 NavSection.FILES -> {
                     FileBrowserScreen(
                         viewModel = fileBrowserVM,
-                        onFileSelected = { file ->
-                            editorVM.setPendingCode(file.content)
-                            editorVM.setCurrentFile(file.name)
-                            editorVM.clearOutput()
-                            currentSection = NavSection.EDITOR
-                        },
-                        onNewFile = { name ->
-                            try {
-                                if (fileBrowserVM.fileExists(name)) {
-                                    overwriteTarget = SchemeFileNames.sanitize(name)
-                                } else {
-                                    createEmptyFile(name)
-                                }
-                            } catch (e: IllegalArgumentException) {
-                                showFileError("Could not create file", e)
-                            }
-                        },
-                        onDeleteFile = { file ->
-                            try {
-                                fileBrowserVM.deleteFile(file.path)
-                                // Only reached when the file is really gone.
-                                // SchemeFile.name and currentFileName are both
-                                // stored as base names without the .scm
-                                // extension, so they compare directly. Resetting
-                                // the pending code queues an empty document that
-                                // replaces the deleted file's content next time
-                                // the editor is shown, and clearing the name
-                                // drops it from the title and the save-dialog
-                                // prefill (issue #15).
-                                if (file.name == editorVM.currentFileName.value) {
-                                    editorVM.setPendingCode("")
-                                    editorVM.setCurrentFile(null)
-                                    editorVM.clearOutput()
-                                }
-                            } catch (e: FileRepositoryException) {
-                                showFileError("Could not delete file", e)
-                            }
-                        },
+                        onFileSelected = ::openFile,
+                        onNewFile = ::newFile,
+                        onDeleteFile = ::deleteFile,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(padding),
@@ -479,22 +518,16 @@ private fun KaappiStudioApp(
                 androidx.compose.material3.TextButton(
                     onClick = {
                         if (saveFileName.isNotBlank()) {
+                            // Capture the name now: the callback runs after the
+                            // dialog has closed and its field may be reused.
+                            val name = saveFileName
                             getEditorWebView().evaluateJavascript(
                                 "window.kaappiAPI?.getCode()",
                             ) { rawCode ->
                                 // Skip the save entirely when there is no
                                 // content to save (page not ready) rather than
                                 // clobbering the target file with "null".
-                                decodeCodeResult(rawCode)?.let { code ->
-                                    try {
-                                        val saved = fileBrowserVM.saveFile(saveFileName, code)
-                                        editorVM.setCurrentFile(saved.name)
-                                    } catch (e: FileRepositoryException) {
-                                        showFileError("Could not save file", e)
-                                    } catch (e: IllegalArgumentException) {
-                                        showFileError("Could not save file", e)
-                                    }
-                                }
+                                decodeCodeResult(rawCode)?.let { code -> saveEditorCode(name, code) }
                             }
                             showSaveDialog = false
                         }

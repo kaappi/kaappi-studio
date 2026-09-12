@@ -55,7 +55,7 @@ Unit tests live in two places and run on the JVM (no emulator needed):
 | Location | Contents | Task |
 |----------|----------|------|
 | `shared/src/commonTest/` | `ExampleRepository` integrity, `SchemeFile` serialization | `:shared:testAndroidHostTest` |
-| `app/src/test/` | `KaappiBridge` message handling, `SchemeRunner` execution paths, `EditorViewModel` state | `:app:testDebugUnitTest` (or `:app:test`) |
+| `app/src/test/` | `KaappiBridge` message handling, `SchemeRunner` execution paths, `FileRepository` contract, `EditorViewModel` / `FileBrowserViewModel` state | `:app:testDebugUnitTest` (or `:app:test`) |
 
 Conventions:
 
@@ -64,6 +64,8 @@ Conventions:
   asset.
 - `EditorViewModel` tests use `kotlinx-coroutines-test` (`Dispatchers.setMain`) because
   `viewModelScope` needs a Main dispatcher on the JVM.
+- `FileRepository` and `FileBrowserViewModel` operations are `suspend` functions (their
+  I/O runs on `Dispatchers.IO`), so their tests run under `runBlocking` / `runTest`.
 - Android framework interactions in tests use Mockito (`contextWithCacheDir` helper).
 
 The Compose UI (`ui/screens`, `ui/theme`) has no unit tests — it needs instrumentation

@@ -55,8 +55,12 @@ object SchemeFileNames {
  * per-platform "schemes" directory (`<filesDir>/schemes` on Android,
  * `Documents/schemes` on iOS).
  *
- * # Contract (every actual must obey — issues #8, #17)
+ * # Contract (every actual must obey — issues #8, #12, #17)
  *
+ * - **All I/O is off the main thread:** every operation is a `suspend`
+ *   function that performs its disk access on `Dispatchers.IO`, including
+ *   the lazy creation of the schemes directory. Callers may invoke them from
+ *   the main thread; they never block it.
  * - **Names are sanitized centrally:** every name argument goes through
  *   [SchemeFileNames.sanitize]; invalid names throw [IllegalArgumentException]
  *   before any file system access.
@@ -76,16 +80,17 @@ object SchemeFileNames {
  *   collision, and never silently replaces data. Renaming a file to its own
  *   current name is a no-op success, not a collision.
  * - **[listFiles][FileRepository.listFiles]** returns every `.scm` file in the
- *   directory, newest first. Non-UTF-8 content is decoded lossily (U+FFFD)
- *   rather than dropping the file, so it stays visible and deletable. A file
- *   that cannot be read at all makes [listFiles][FileRepository.listFiles]
- *   throw [FileRepositoryException] — a listed entry never carries fabricated
- *   empty content, which a later save would persist over the real file.
+ *   directory, newest first, as name, path and modification time only. It
+ *   never reads a file's contents (the browser does not show them, and
+ *   reading every file on each listing janked the UI — issue #12), so an
+ *   unreadable or non-UTF-8 file stays listed and deletable; the failure or
+ *   lossy decoding surfaces from [readFile][FileRepository.readFile] when the
+ *   file is opened.
  */
 expect class FileRepository {
-    fun listFiles(): List<SchemeFile>
-    fun readFile(path: String): String
-    fun writeFile(name: String, content: String): SchemeFile
-    fun deleteFile(path: String): Boolean
-    fun renameFile(oldPath: String, newName: String): SchemeFile?
+    suspend fun listFiles(): List<SchemeFile>
+    suspend fun readFile(path: String): String
+    suspend fun writeFile(name: String, content: String): SchemeFile
+    suspend fun deleteFile(path: String): Boolean
+    suspend fun renameFile(oldPath: String, newName: String): SchemeFile?
 }

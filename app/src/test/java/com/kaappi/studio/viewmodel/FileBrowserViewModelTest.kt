@@ -4,6 +4,8 @@ import com.kaappi.studio.contextWithFilesDir
 import com.kaappi.studio.data.FileRepository
 import com.kaappi.studio.data.FileRepositoryException
 import java.io.File
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
@@ -24,7 +26,7 @@ class FileBrowserViewModelTest {
     }
 
     @Test
-    fun fileExists_matchesSanitizedBaseNamesOnDisk() {
+    fun fileExists_matchesSanitizedBaseNamesOnDisk() = runTest {
         val (vm, _) = newViewModel()
 
         assertFalse(vm.fileExists("hello"))
@@ -37,15 +39,15 @@ class FileBrowserViewModelTest {
     }
 
     @Test
-    fun fileExists_rejectsInvalidNames() {
+    fun fileExists_rejectsInvalidNames() = runTest {
         val (vm, _) = newViewModel()
 
-        assertThrows(IllegalArgumentException::class.java) { vm.fileExists("../x") }
-        assertThrows(IllegalArgumentException::class.java) { vm.fileExists("foo/bar") }
+        assertThrows(IllegalArgumentException::class.java) { runBlocking { vm.fileExists("../x") } }
+        assertThrows(IllegalArgumentException::class.java) { runBlocking { vm.fileExists("foo/bar") } }
     }
 
     @Test
-    fun saveFile_returnsTheSanitizedFileAndRefreshesTheList() {
+    fun saveFile_returnsTheSanitizedFileAndRefreshesTheList() = runTest {
         val (vm, _) = newViewModel()
 
         val saved = vm.saveFile("  my file  ", "(display 1)")
@@ -55,15 +57,15 @@ class FileBrowserViewModelTest {
     }
 
     @Test
-    fun saveFile_propagatesRepositoryFailuresInsteadOfFabricatingSuccess() {
+    fun saveFile_propagatesRepositoryFailuresInsteadOfFabricatingSuccess() = runTest {
         val (vm, _) = newViewModel()
 
-        assertThrows(IllegalArgumentException::class.java) { vm.saveFile("foo/bar", "") }
+        assertThrows(IllegalArgumentException::class.java) { runBlocking { vm.saveFile("foo/bar", "") } }
         assertTrue(vm.files.value.isEmpty())
     }
 
     @Test
-    fun deleteFile_removesTheFileAndRefreshesTheList() {
+    fun deleteFile_removesTheFileAndRefreshesTheList() = runTest {
         val (vm, dir) = newViewModel()
         val saved = vm.saveFile("gone", "(display 1)")
 
@@ -74,16 +76,33 @@ class FileBrowserViewModelTest {
     }
 
     @Test
-    fun deleteFile_throwsWhenNothingWasDeletedInsteadOfFabricatingSuccess() {
+    fun deleteFile_throwsWhenNothingWasDeletedInsteadOfFabricatingSuccess() = runTest {
         // The caller resets editor state after a delete; it must never do so
         // for a file that is still on disk (issue #15).
         val (vm, dir) = newViewModel()
         vm.saveFile("keep", "(display 1)")
 
         assertThrows(FileRepositoryException::class.java) {
-            vm.deleteFile(File(dir, "missing.scm").absolutePath)
+            runBlocking { vm.deleteFile(File(dir, "missing.scm").absolutePath) }
         }
 
         assertTrue("the list must still reflect the disk", vm.files.value.any { it.name == "keep" })
+    }
+
+    @Test
+    fun readFile_returnsContentsThatTheListingDoesNotCarry() = runTest {
+        val (vm, _) = newViewModel()
+        val saved = vm.saveFile("prog", "(display 42)")
+
+        assertEquals("(display 42)", vm.readFile(saved.path))
+    }
+
+    @Test
+    fun readFile_propagatesMissingFilesInsteadOfReturningEmpty() = runTest {
+        val (vm, dir) = newViewModel()
+
+        assertThrows(FileRepositoryException::class.java) {
+            runBlocking { vm.readFile(File(dir, "missing.scm").absolutePath) }
+        }
     }
 }
