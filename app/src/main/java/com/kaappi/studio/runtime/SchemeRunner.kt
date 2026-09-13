@@ -66,7 +66,7 @@ class SchemeRunner(
      * execution takes.
      */
     internal fun newRunDirectory(): File =
-        File(File(context.cacheDir, "kaappi-run"), "run-${UUID.randomUUID()}")
+        File(File(context.cacheDir, RunnerProtocol.RUN_ROOT_DIR), "run-${UUID.randomUUID()}")
 
     override suspend fun run(code: String): RunResult = try {
         withContext(runDispatcher) {

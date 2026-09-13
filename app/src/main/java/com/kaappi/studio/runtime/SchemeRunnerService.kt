@@ -11,6 +11,7 @@ import android.os.Messenger
 import android.os.Process
 import android.os.RemoteException
 import android.util.Log
+import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -37,9 +38,9 @@ class SchemeRunnerService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        // No run can be in flight when a runner process comes up: the previous
-        // process is dead or idle, and clients collect results before starting
-        // another run. Anything left is a killed run's or crashed client's debris.
+        // Debris from killed runs and crashed clients. Nothing here is still
+        // needed by a live run — see sweepStaleRunFiles for the one abandoned
+        // case a cached process can still be executing.
         RunnerProtocol.sweepStaleRunFiles(cacheDir)
     }
 
@@ -63,11 +64,18 @@ class SchemeRunnerService : Service() {
 
         val runner = SchemeRunner(applicationContext, moduleCache(applicationContext))
         scope.launch {
+            // run() reports its own failures through stderr and never throws;
+            // writing the result files is the one step left that can, and an
+            // uncaught exception here would kill the process with a misleading
+            // "exited unexpectedly" on the client side.
             val result = runner.run(code)
-            val reply = Message.obtain(null, RunnerProtocol.MSG_RESULT).apply {
-                data = RunnerProtocol.encodeResult(result, cacheDir)
+            val payload = try {
+                RunnerProtocol.encodeResult(result, cacheDir)
+            } catch (e: IOException) {
+                Log.w(TAG, "Could not write result files", e)
+                RunnerProtocol.encodeFailure("Could not write the program's output: ${e.message}")
             }
-            replyTo.trySend(reply)
+            replyTo.trySend(Message.obtain(null, RunnerProtocol.MSG_RESULT).apply { data = payload })
         }
     }
 

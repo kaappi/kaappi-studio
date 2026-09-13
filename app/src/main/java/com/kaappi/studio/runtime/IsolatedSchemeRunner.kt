@@ -11,6 +11,7 @@ import android.os.Message
 import android.os.Messenger
 import android.os.Process
 import android.os.RemoteException
+import android.os.TransactionTooLargeException
 import android.util.Log
 import com.kaappi.studio.domain.RunResult
 
@@ -70,6 +71,12 @@ class IsolatedSchemeRunner(private val context: Context) : SchemeExecutor {
                 }
                 try {
                     Messenger(service).send(request)
+                } catch (e: TransactionTooLargeException) {
+                    // The program travels inline; a Binder transaction is
+                    // capped at about 1 MB (see RunnerProtocol).
+                    Log.w(TAG, "Program too large to send", e)
+                    unbind()
+                    session.onStartFailed(PROGRAM_TOO_LARGE_MESSAGE)
                 } catch (e: RemoteException) {
                     Log.w(TAG, "Runner process unreachable", e)
                     processDied()
@@ -133,7 +140,9 @@ class IsolatedSchemeRunner(private val context: Context) : SchemeExecutor {
         thread?.quitSafely()
     }
 
-    private companion object {
-        const val TAG = "IsolatedSchemeRunner"
+    internal companion object {
+        private const val TAG = "IsolatedSchemeRunner"
+        const val PROGRAM_TOO_LARGE_MESSAGE =
+            "The program is too large to hand to the Scheme runner (the limit is about 1 MB)."
     }
 }

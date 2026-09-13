@@ -32,6 +32,9 @@ internal object RunnerProtocol {
     const val KEY_STDERR_FILE = "stderrFile"
     const val KEY_ELAPSED_MS = "elapsedMs"
 
+    /** Set instead of the file keys when the service could not write the result files. */
+    const val KEY_ERROR = "error"
+
     /** Shared with [SchemeRunner.newRunDirectory]: everything a run leaves behind lives here. */
     const val RUN_ROOT_DIR = "kaappi-run"
 
@@ -46,8 +49,19 @@ internal object RunnerProtocol {
         }
     }
 
+    /**
+     * The runner's fallback when the result files cannot be written (cache
+     * directory full or unwritable): a short message always fits inline.
+     */
+    fun encodeFailure(message: String): Bundle = Bundle().apply {
+        putString(KEY_ERROR, message)
+    }
+
     /** Reads the result files named by [bundle] and removes them. */
     fun decodeResult(bundle: Bundle): RunResult {
+        bundle.getString(KEY_ERROR)?.let { error ->
+            return RunResult(stdout = "", stderr = error, elapsedMs = 0.0)
+        }
         val stdoutFile = File(bundle.getString(KEY_STDOUT_FILE).orEmpty())
         val stderrFile = File(bundle.getString(KEY_STDERR_FILE).orEmpty())
         val result = RunResult(
@@ -60,9 +74,14 @@ internal object RunnerProtocol {
     }
 
     /**
-     * Deletes everything under the run root. Safe whenever no run is in
-     * flight in any runner process: a killed run's `program.scm` was read at
-     * startup, and every result is collected before the next run begins.
+     * Deletes everything under the run root. Called when a runner process
+     * starts a service instance, at which point every `program.scm` here has
+     * long been read (the interpreter loads it at startup) and every result
+     * has been collected (the client reads its files before the next run can
+     * begin). The one run that may still be executing is a program abandoned
+     * by an app-process death, still going on its daemon thread in a cached
+     * runner process; losing its working directory only affects a program
+     * that writes files there, and nobody is listening for its output anyway.
      */
     fun sweepStaleRunFiles(cacheDir: File) {
         File(cacheDir, RUN_ROOT_DIR).listFiles()?.forEach { it.deleteRecursively() }

@@ -175,8 +175,14 @@ Details worth knowing:
   process down, not the app; the client sees `onServiceDisconnected` and shows
   "The Scheme runner process exited unexpectedly". A killed run leaves its
   `program.scm` (and any uncollected result files) under `cacheDir/kaappi-run/`;
-  `SchemeRunnerService.onCreate` sweeps that directory, which is safe because no
-  run can be in flight when a runner process comes up.
+  `SchemeRunnerService.onCreate` sweeps that directory. By then every program
+  file has been read and every result collected. The one run that can still be
+  executing is a program abandoned by an app-process death, kept going on its
+  daemon thread in a cached runner process; losing its working directory only
+  matters to a program that writes files there, and its output has no listener.
+- The program itself travels inline in the run request, so a program over the
+  Binder limit of about 1 MB is refused with a message saying so rather than
+  reported as a runner crash.
 
 ### `iosApp/` — iOS
 
