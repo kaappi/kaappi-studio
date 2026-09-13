@@ -3,6 +3,7 @@ package com.kaappi.studio.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kaappi.studio.domain.RunResult
+import com.kaappi.studio.runtime.IsolatedRunSession
 import com.kaappi.studio.runtime.SchemeExecutor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -116,7 +117,7 @@ class EditorViewModel(
         _isRunning.value = false
         _lastResult.value = RunResult(
             stdout = "",
-            stderr = "Run stopped by user.",
+            stderr = IsolatedRunSession.STOPPED_MESSAGE,
             elapsedMs = 0.0,
         )
     }
