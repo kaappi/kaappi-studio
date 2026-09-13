@@ -1,14 +1,13 @@
 package com.kaappi.studio.viewmodel
 
+import com.kaappi.studio.assertThrowsSuspend
 import com.kaappi.studio.contextWithFilesDir
 import com.kaappi.studio.data.FileRepository
 import com.kaappi.studio.data.FileRepositoryException
 import java.io.File
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -42,8 +41,8 @@ class FileBrowserViewModelTest {
     fun fileExists_rejectsInvalidNames() = runTest {
         val (vm, _) = newViewModel()
 
-        assertThrows(IllegalArgumentException::class.java) { runBlocking { vm.fileExists("../x") } }
-        assertThrows(IllegalArgumentException::class.java) { runBlocking { vm.fileExists("foo/bar") } }
+        assertThrowsSuspend<IllegalArgumentException> { vm.fileExists("../x") }
+        assertThrowsSuspend<IllegalArgumentException> { vm.fileExists("foo/bar") }
     }
 
     @Test
@@ -60,7 +59,7 @@ class FileBrowserViewModelTest {
     fun saveFile_propagatesRepositoryFailuresInsteadOfFabricatingSuccess() = runTest {
         val (vm, _) = newViewModel()
 
-        assertThrows(IllegalArgumentException::class.java) { runBlocking { vm.saveFile("foo/bar", "") } }
+        assertThrowsSuspend<IllegalArgumentException> { vm.saveFile("foo/bar", "") }
         assertTrue(vm.files.value.isEmpty())
     }
 
@@ -82,8 +81,8 @@ class FileBrowserViewModelTest {
         val (vm, dir) = newViewModel()
         vm.saveFile("keep", "(display 1)")
 
-        assertThrows(FileRepositoryException::class.java) {
-            runBlocking { vm.deleteFile(File(dir, "missing.scm").absolutePath) }
+        assertThrowsSuspend<FileRepositoryException> {
+            vm.deleteFile(File(dir, "missing.scm").absolutePath)
         }
 
         assertTrue("the list must still reflect the disk", vm.files.value.any { it.name == "keep" })
@@ -101,8 +100,8 @@ class FileBrowserViewModelTest {
     fun readFile_propagatesMissingFilesInsteadOfReturningEmpty() = runTest {
         val (vm, dir) = newViewModel()
 
-        assertThrows(FileRepositoryException::class.java) {
-            runBlocking { vm.readFile(File(dir, "missing.scm").absolutePath) }
+        assertThrowsSuspend<FileRepositoryException> {
+            vm.readFile(File(dir, "missing.scm").absolutePath)
         }
     }
 }

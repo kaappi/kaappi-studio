@@ -10,6 +10,12 @@ import kotlinx.coroutines.withContext
 actual class FileRepository(context: Context) {
     // Lazy so the mkdirs and the temp-file sweep run on Dispatchers.IO at
     // first use, not on the main thread when the ViewModel is built (issue #12).
+    //
+    // Relies on lazy's default LazyThreadSafetyMode.SYNCHRONIZED: every
+    // writeFile must obtain `dir` before it creates its .tmp, so it blocks
+    // until this initializer (mkdirs + sweep) has finished, and the one-time
+    // sweep can therefore never delete a concurrent write's temp file. Do not
+    // switch the mode for startup reasons without replacing that guarantee.
     private val dir: File by lazy {
         File(context.filesDir, "schemes").also {
             it.mkdirs()
