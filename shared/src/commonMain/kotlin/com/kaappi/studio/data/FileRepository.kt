@@ -86,7 +86,10 @@ object SchemeFileNames {
  *   reading every file on each listing janked the UI — issue #12), so an
  *   unreadable or non-UTF-8 file stays listed and deletable; the failure or
  *   lossy decoding surfaces from [readFile][FileRepository.readFile] when the
- *   file is opened.
+ *   file is opened. It never throws: a missing or unreadable directory lists
+ *   as empty. This is the one operation without `@Throws`, so an actual that
+ *   threw (say, [FileRepositoryException] on an unreadable directory) would
+ *   cross into Swift unannotated and terminate the iOS app.
  *
  * The `@Throws` annotations are part of the contract too: the iOS app calls
  * these through the Kotlin/Native framework, and only annotated exceptions
