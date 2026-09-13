@@ -28,3 +28,6 @@ iosApp/Frameworks/
 xcuserdata/
 app/src/main/assets/kaappi.wasm
 iosApp/KaappiStudio/Resources/webview/kaappi.wasm
+
+# CodeMirror bundle build tooling (scripts/codemirror-bundle/)
+node_modules/

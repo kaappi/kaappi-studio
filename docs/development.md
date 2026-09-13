@@ -127,8 +127,26 @@ The script writes the binary to all three gitignored paths the platforms read
 
 Edit `editor.js` / `styles.css` in **both** `app/src/main/assets/webview/` and
 `iosApp/KaappiStudio/Resources/webview/`. `codemirror-bundle.mjs` is a prebuilt ES
-module — regenerate it only if you need a different CodeMirror version, and copy it to
-both locations.
+module; rebuild it only when you need a different CodeMirror version or another export
+(see the next section).
+
+The editor keeps its theme-dependent extensions (caret color, dark flag, highlight
+palette) in a CodeMirror `Compartment`, so `setTheme` reconfigures them in place and the
+document, selection, scroll position and undo history all survive a theme change.
+
+### Rebuild the CodeMirror bundle
+
+The bundle is built by [`scripts/codemirror-bundle/`](../scripts/codemirror-bundle/):
+`entry.mjs` lists every symbol `editor.js` imports, `package.json` pins the CodeMirror
+and esbuild versions, and `package-lock.json` makes the build reproducible.
+
+```bash
+bash scripts/codemirror-bundle/build.sh   # needs Node.js; writes both asset copies
+```
+
+To add an export, add it to `entry.mjs` and rebuild. To upgrade CodeMirror, bump the
+versions in `package.json`, run `npm install` in that directory to refresh the lockfile,
+rebuild, and commit the lockfile together with both bundle copies.
 
 A CI check (in the Android workflow, so it runs on Swift-only changes too) compares
 the two copies byte-for-byte on every push and pull request — run it locally with:
