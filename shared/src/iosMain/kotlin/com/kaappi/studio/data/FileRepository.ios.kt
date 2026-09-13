@@ -3,6 +3,7 @@
 package com.kaappi.studio.data
 
 import com.kaappi.studio.domain.SchemeFile
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.Dispatchers
@@ -43,12 +44,14 @@ actual class FileRepository {
             .sortedByDescending { it.lastModified }
     }
 
+    @Throws(FileRepositoryException::class, CancellationException::class)
     actual suspend fun readFile(path: String): String = withContext(Dispatchers.IO) {
         // Contract: throw on missing/unreadable files — never return "" (see
         // expect KDoc); invalid UTF-8 content decodes lossily, like Android.
         decodeLossy(readData(path))
     }
 
+    @Throws(FileRepositoryException::class, IllegalArgumentException::class, CancellationException::class)
     actual suspend fun writeFile(name: String, content: String): SchemeFile = withContext(Dispatchers.IO) {
         val safeName = SchemeFileNames.withExtension(SchemeFileNames.sanitize(name))
         val path = "$dir/$safeName"
@@ -66,6 +69,7 @@ actual class FileRepository {
         NSFileManager.defaultManager.removeItemAtPath(path, error = null)
     }
 
+    @Throws(IllegalArgumentException::class, CancellationException::class)
     actual suspend fun renameFile(oldPath: String, newName: String): SchemeFile? = withContext(Dispatchers.IO) {
         val safeName = SchemeFileNames.withExtension(SchemeFileNames.sanitize(newName))
         val newPath = "$dir/$safeName"

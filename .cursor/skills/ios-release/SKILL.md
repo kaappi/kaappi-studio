@@ -11,6 +11,8 @@ description: Build an iOS release based on an existing git tag. Bumps version to
 
 - An existing version tag (e.g., `v1.0.0`)
 - Xcode installed with the `KaappiStudio` scheme
+- A JDK 17+ that `/usr/libexec/java_home` can find (or `JAVA_HOME` exported) — the
+  archive builds the shared Kotlin framework through Gradle
 - Code signing configured (Development Team `9QBV46NATP` set in project.yml)
 - `xcodegen` installed (`brew install xcodegen`)
 - `kaappi.wasm` in `iosApp/KaappiStudio/Resources/webview/`

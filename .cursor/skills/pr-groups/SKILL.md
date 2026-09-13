@@ -118,9 +118,9 @@ Strongest signal first — pair on the highest one that applies:
 Do **not** group:
 
 - A fix needing a design decision with one that doesn't. The design discussion
-  will hold the whole PR hostage. (#4's durable fix — generating
-  `Examples.swift` from Kotlin or migrating iOS onto the shared module — is
-  hostage to #14's framework decision.)
+  will hold the whole PR hostage. (#4's durable fix — migrating iOS onto the
+  shared module — was hostage to #14's framework decision until #14 wired the
+  framework in.)
 - A platform-shell change with local fixes, for the same reason.
 - Issues whose only link is a shared label or milestone.
 
@@ -135,13 +135,12 @@ that only bite in aggregate. Check, per group:
 - **Duplicated files.** Webview assets exist in two copies that must change
   together — `app/src/main/assets/webview/` and
   `iosApp/KaappiStudio/Resources/webview/` — **except `bridge.js`, which
-  intentionally differs** (Android editor-only vs iOS WASM runner). Example
-  programs exist in `shared/.../ExampleRepository.kt` and
-  `iosApp/KaappiStudio/Helpers/Examples.swift` and must match
-  id/title/description/category/code. A group touching one copy must name the
-  mirrored edit in the plan; a group whose fix is legitimately
-  single-platform must say why the other copy is untouched. This invariant is
-  already broken (#4) — do not make it worse.
+  intentionally differs** (Android editor-only vs iOS WASM runner). A group
+  touching one copy must name the mirrored edit in the plan; a group whose fix
+  is legitimately single-platform must say why the other copy is untouched.
+  (Example programs used to be duplicated in Swift as well; since #14 they
+  live only in `shared/.../ExampleRepository.kt`, and a `shared` API change
+  is an iOS change too — the Swift call sites must still compile.)
 - **Bridge protocol lockstep.** A group adding or changing a JS↔native event
   must update both native handlers (`KaappiBridge.kt`,
   `SchemeWebView.swift`), both `bridge.js` variants, and

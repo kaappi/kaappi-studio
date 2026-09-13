@@ -21,8 +21,9 @@ platforms. Full documentation lives in [`docs/`](docs/README.md) — read
 
 # iOS (Xcode project is generated — do not hand-edit project.pbxproj)
 cd iosApp && xcodegen generate     # REQUIRED after adding/removing/moving files under iosApp/
+./gradlew :shared:linkDebugFrameworkIosSimulatorArm64   # the shared Kotlin framework alone (readable log)
 xcodebuild build -project iosApp/KaappiStudio.xcodeproj -scheme KaappiStudio \
-  -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO
+  -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO   # runs Gradle too — needs a JDK
 ```
 
 The destination simulator name depends on the installed Xcode (e.g. `iPhone 17`
@@ -48,19 +49,23 @@ Versions are centralized in `gradle/libs.versions.toml` (version catalog). JDK 1
   be byte-identical on iOS. **Exception:** `bridge.js` intentionally differs — the
   Android variant is editor-only; the iOS variant pre-compiles WASM and implements
   `runCode()`. See [docs/bridge-protocol.md](docs/bridge-protocol.md).
-- **Example programs are duplicated:** Android reads
-  `shared/src/commonMain/.../data/ExampleRepository.kt`; iOS reads
-  `iosApp/KaappiStudio/Helpers/Examples.swift`. Any example change must land in both,
-  with matching id/title/description/category/code. CI enforces this on every push
-  (`scripts/check-examples-parity.py`; see [docs/development.md](docs/development.md)),
-  which also caps per-example code size — keep example workloads small enough to run
-  on iOS's main-thread WASM.
+- **iOS links `:shared` as a Kotlin/Native static framework:** a pre-build script
+  phase in `iosApp/project.yml` runs `./gradlew :shared:embedAndSignAppleFrameworkForXcode`,
+  so every iOS build (local, CI, `xcodebuild archive`) needs a JDK and compiles
+  `shared/src/iosMain`. Example programs, file storage and settings live only in
+  Kotlin; the Swift view models wrap `FileRepository`/`SettingsRepository`. Any Kotlin
+  exception a Swift caller must catch has to be listed in `@Throws` (with
+  `CancellationException` on `suspend` functions) — an unlisted exception crossing the
+  bridge terminates the iOS app. `ExampleRepositoryTest` caps per-example code size —
+  keep example workloads small enough to run on iOS's main-thread WASM.
 - **Test layout:** unit tests run on the JVM — `shared/src/commonTest/` (repository
   integrity, serialization; runs via `:shared:testAndroidHostTest`) and
-  `app/src/test/` (bridge, runner, viewmodels; runs via `./gradlew test`). Keep new
-  detekt violations out of `app/detekt-baseline.xml` — extend it only for existing-code
-  refactors, never to make new code pass. Compose UI (`ui/screens`, `ui/theme`) is
-  untested and needs instrumentation tests.
+  `app/src/test/` (bridge, runner, viewmodels; runs via `./gradlew test`). iOS tests
+  (`iosApp/KaappiStudioTests/`: view models, the Kotlin ↔ Swift bridge, a file
+  round trip through the shared repository) run on the simulator via `xcodebuild test`.
+  Keep new detekt violations out of `app/detekt-baseline.xml` — extend it only for
+  existing-code refactors, never to make new code pass. Compose UI (`ui/screens`,
+  `ui/theme`) is untested and needs instrumentation tests.
 - **Never commit secrets or binaries:** `keystore.properties`, `*.jks`,
   `app/play-service-account.json`, and all `kaappi.wasm` paths are gitignored. Keep it
   that way.
@@ -83,10 +88,10 @@ here; bugs in how Scheme code evaluates are upstream.
 |------|------|
 | `shared/` | KMP module: domain models in `commonMain`, `expect`/`actual` `FileRepository`/`SettingsRepository` in `androidMain`/`iosMain` (user files live in `<filesDir>/schemes/` on Android, `Documents/schemes/` on iOS) |
 | `app/` | Android app: Compose UI (`ui/screens/`), ViewModels, `bridge/KaappiBridge.kt`, `runtime/SchemeRunner.kt` (Chicory JVM WASM runtime) |
-| `iosApp/` | SwiftUI app: `Bridge/SchemeWebView.swift`, ViewModels, Views, `Resources/webview/` assets |
+| `iosApp/` | SwiftUI app: `Bridge/SchemeWebView.swift`, ViewModels (wrapping the shared Kotlin repositories), Views, `Helpers/SharedModels.swift` (Swift conveniences for the Kotlin models), `Resources/webview/` assets |
 | `docs/` | Contributor documentation |
 | `.cursor/skills/` | Release automation playbooks (source of truth for release steps) and the `pr-groups` issue-batching skill. Exposed to ZCode via the `.zcode/skills` symlink — edit the files under `.cursor/skills/`, never the symlink |
-| `.github/workflows/` | Android CI (fetch wasm → assembleDebug → test) and iOS CI (xcodebuild build + test) |
+| `.github/workflows/` | Android CI (fetch wasm → assembleDebug → test) and iOS CI (JDK → shared framework → xcodebuild build + test) |
 
 ## Execution model (why the platforms differ)
 
@@ -117,7 +122,8 @@ here; bugs in how Scheme code evaluates are upstream.
 
 1. Android changes: `./gradlew assembleDebug test :shared:testAndroidHostTest :app:detekt` pass.
 2. iOS changes: the `xcodebuild build` command above passes, and `xcodegen generate`
-   was run if files moved.
+   was run if files moved. Changes to the `shared` API surface (`expect` signatures,
+   `@Throws`, domain models) count as iOS changes — the Swift call sites must still compile.
 3. Shared asset or protocol changes: both platform copies updated and consistent.
 4. Behavior changes: extend/adjust the relevant unit tests (see Test layout above).
 5. Docs: if you changed behavior described in `docs/`, update the relevant page.

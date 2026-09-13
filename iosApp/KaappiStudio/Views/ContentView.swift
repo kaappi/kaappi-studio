@@ -12,7 +12,7 @@ struct ContentView: View {
             // only then updates the current file name — a failed save never
             // fabricates success.
             EditorView(editorVM: editorVM, onSave: { name, content in
-                    try fileBrowserVM.saveFile(name: name, content: content)
+                    try await fileBrowserVM.saveFile(name: name, content: content)
                 })
                 .tabItem {
                     Label("Editor", systemImage: "chevron.left.forwardslash.chevron.right")

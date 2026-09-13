@@ -9,9 +9,11 @@ actual class SettingsRepository {
     actual fun getThemeMode(): ThemeMode {
         val name = defaults.stringForKey("theme_mode") ?: ThemeMode.SYSTEM.name
         // Contract: a stale or corrupted stored value falls back to SYSTEM
-        // instead of throwing (matches the Android actual).
+        // instead of throwing (matches the Android actual). Uppercasing keeps
+        // the value the pre-framework Swift settings code stored under the
+        // same key ("Light"/"Dark"/"System") readable after the upgrade.
         return try {
-            ThemeMode.valueOf(name)
+            ThemeMode.valueOf(name.uppercase())
         } catch (_: IllegalArgumentException) {
             ThemeMode.SYSTEM
         }

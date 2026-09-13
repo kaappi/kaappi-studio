@@ -33,7 +33,7 @@ The native shell handles navigation, file management, settings, and theming. A W
 
 ### Prerequisites
 
-- JDK 17+
+- JDK 17+ (Android **and** iOS — Xcode builds the shared Kotlin framework through Gradle)
 - Android Studio (for Android)
 - Xcode 15+ (for iOS)
 - `kaappi.wasm` binary (fetched automatically or built from source)
@@ -50,7 +50,10 @@ bash scripts/fetch-wasm.sh
 
 ### iOS
 
-Open `iosApp/KaappiStudio.xcodeproj` in Xcode and build for a simulator or device.
+Open `iosApp/KaappiStudio.xcodeproj` in Xcode and build for a simulator or device. The
+first build runs Gradle to produce the `shared` Kotlin/Native framework the app links,
+so it needs a JDK and takes a few minutes; see
+[Getting Started](docs/getting-started.md#ios).
 
 ### WASM Binary
 

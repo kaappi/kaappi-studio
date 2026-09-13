@@ -1,10 +1,11 @@
 import SwiftUI
 import WebKit
+import shared
 
 struct EditorView: View {
     @EnvironmentObject var settingsVM: SettingsViewModel
     @ObservedObject var editorVM: EditorViewModel
-    let onSave: (String, String) throws -> SchemeFile
+    let onSave: (String, String) async throws -> SchemeFile
     @State private var showSaveDialog = false
     @State private var saveFileName = ""
     // Observable invalidation for the .system theme: reading
@@ -97,7 +98,7 @@ struct EditorView: View {
                             let code = result as? String ?? ""
                             Task { @MainActor in
                                 do {
-                                    let saved = try onSave(saveFileName, code)
+                                    let saved = try await onSave(saveFileName, code)
                                     // Only a successful save names the file.
                                     editorVM.currentFileName = saved.name
                                 } catch {

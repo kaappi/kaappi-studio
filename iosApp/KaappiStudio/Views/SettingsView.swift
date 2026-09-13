@@ -1,4 +1,5 @@
 import SwiftUI
+import shared
 
 struct SettingsView: View {
     @EnvironmentObject var settingsVM: SettingsViewModel
@@ -8,8 +9,8 @@ struct SettingsView: View {
             Form {
                 Section("Appearance") {
                     Picker("Theme", selection: $settingsVM.themeMode) {
-                        ForEach(ThemeMode.allCases, id: \.self) { mode in
-                            Text(mode.rawValue).tag(mode)
+                        ForEach(ThemeMode.entries, id: \.self) { mode in
+                            Text(mode.label).tag(mode)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -19,7 +20,7 @@ struct SettingsView: View {
                     HStack {
                         Text("Font size: \(settingsVM.fontSize)px")
                         Spacer()
-                        Stepper("", value: $settingsVM.fontSize, in: 10...24)
+                        Stepper("", value: $settingsVM.fontSize, in: SettingsViewModel.fontSizeRange)
                             .labelsHidden()
                     }
                 }

@@ -17,7 +17,7 @@ CodeMirror 6 code editor. Scheme execution takes a different path on each platfo
 │        └── SchemeRunner: Chicory JVM WASM runtime           │
 │            executes kaappi.wasm natively (own run thread)   │
 │                                                             │
-│  :shared (KMP): domain models, File/Settings repositories   │
+│  :shared (KMP): examples, File/Settings repositories        │
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────── iOS ─────────────────────────────┐
@@ -29,7 +29,8 @@ CodeMirror 6 code editor. Scheme execution takes a different path on each platfo
 │              Scheme runs inside the WebView:                │
 │              browser WebAssembly + wasi-shim-bundle.mjs     │
 │                                                             │
-│  :shared (KMP) framework: File/Settings repositories        │
+│  :shared (KMP) static framework: examples, File/Settings    │
+│  repositories — built by Gradle from an Xcode script phase  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -44,9 +45,9 @@ execute the same `kaappi.wasm` binary and feed it the program as `program.scm` o
 
 | Module | Technology | Responsibility |
 |--------|-----------|----------------|
-| `:shared` | Kotlin Multiplatform (JVM + Android + iOS targets) | Domain models and `expect`/`actual` repositories |
+| `:shared` | Kotlin Multiplatform (Android + iOS targets) | Domain models, example programs and `expect`/`actual` repositories |
 | `:app` | Jetpack Compose, Material 3, WebView, Chicory | Full Android app |
-| `iosApp/` | SwiftUI, WebKit | Full iOS app (consumes `:shared` as a static framework) |
+| `iosApp/` | SwiftUI, WebKit | Full iOS app (links `:shared` as a static framework built by a Gradle run-script phase) |
 
 ### `:shared` — Kotlin Multiplatform module
 
@@ -54,7 +55,8 @@ execute the same `kaappi.wasm` binary and feed it the program as `program.scm` o
 
 - **`domain/`** — data classes: `Example` + `ExampleCategory`, `SchemeFile`
   (kotlinx-serialization), `RunResult` (stdout/stderr/elapsedMs), `ReplEntry`, `ThemeMode`.
-- **`data/`** — `expect` classes implemented per platform:
+- **`data/`** — `ExampleRepository` (the single list of example programs, used by both
+  apps) and `expect` classes implemented per platform:
   - `FileRepository` — user Scheme files (`*.scm`)
   - `SettingsRepository` — theme mode, font size, last opened file
 
@@ -76,8 +78,34 @@ Platform `actual` implementations:
 | User files | `<filesDir>/schemes/*.scm` via `java.io.File` | `Documents/schemes/*.scm` via `NSFileManager` |
 | Settings | `SharedPreferences` (`kaappi_studio_prefs`) | `NSUserDefaults` (standard) |
 
-The module also declares a plain `jvm()` target (useful for fast JVM-side tests) and
-Kover for coverage.
+#### How iOS consumes `:shared`
+
+`shared/build.gradle.kts` declares the three iOS targets (`iosArm64`,
+`iosSimulatorArm64`, `iosX64`) and a **static** framework named `shared`. The
+`KaappiStudio` Xcode target has a "Build shared Kotlin framework" pre-build script
+phase (see `iosApp/project.yml`) that runs
+`./gradlew :shared:embedAndSignAppleFrameworkForXcode`; the Kotlin Gradle plugin reads
+Xcode's `CONFIGURATION`/`SDK_NAME`/`ARCHS` environment, links the matching framework
+and copies it to `shared/build/xcode-frameworks/<config>/<sdk>/`, where
+`FRAMEWORK_SEARCH_PATHS` points and `OTHER_LDFLAGS` links it. Static frameworks are
+linked into the app binary, not embedded, so nothing is copied into the bundle and no
+signing is involved. Every iOS build therefore needs a JDK, and iOS CI compiles
+`shared/src/iosMain` on every push.
+
+Swift sees the Kotlin API through the generated Objective-C header:
+`ExampleRepository.shared.examples`, `FileRepository()`/`SettingsRepository()`, and the
+Kotlin enums (`ThemeMode.entries`, `ExampleCategory.entries`). Two bridge rules matter:
+
+- `suspend` functions become `async throws` in Swift, but **only exceptions listed in
+  `@Throws` become thrown errors** — any other Kotlin exception crossing into Swift
+  terminates the process. The `FileRepository` `expect` declarations (and
+  `SchemeFileNames.sanitize`) carry the annotations; keep them when changing the API.
+- `Example.description` is exported as `description_` (NSObject owns `description`),
+  and `SchemeFile.lastModified` arrives as `Int64` epoch milliseconds.
+  `iosApp/KaappiStudio/Helpers/SharedModels.swift` adds the `Identifiable`
+  conformances and a `Date` accessor the SwiftUI views need.
+
+Kover measures the module's coverage on the Android host.
 
 ### `:app` — Android
 
@@ -133,8 +161,9 @@ iosApp/KaappiStudio/
 ├── KaappiStudioApp.swift    # @main entry point
 ├── Bridge/SchemeWebView.swift  # UIViewRepresentable + WKScriptMessageHandler coordinator
 ├── ViewModels/              # Editor / FileBrowser / Settings ObservableObjects
+│                            # (FileBrowser and Settings wrap the shared Kotlin repositories)
 ├── Views/                   # SwiftUI screens (Editor, Examples, FileBrowser, Settings)
-├── Helpers/Examples.swift   # example programs (Swift mirror of the shared Kotlin list)
+├── Helpers/SharedModels.swift  # Identifiable/Date conveniences for the Kotlin models
 └── Resources/webview/       # WebView assets bundled into the app
 ```
 
@@ -199,9 +228,11 @@ Selecting an example or file pushes its code into the editor via the
 
 | Want to change… | Edit |
 |-----------------|------|
-| Example programs | `shared/.../data/ExampleRepository.kt` **and** `iosApp/KaappiStudio/Helpers/Examples.swift` |
+| Example programs | `shared/.../data/ExampleRepository.kt` (both platforms) |
 | Editor keymap/highlighting | `editor.js` (both webview dirs) |
 | Editor/output colors | `styles.css` (both), `app/.../ui/theme/`, iOS assets |
 | Scheme execution behavior | Android: `runtime/SchemeRunner.kt` · iOS: `bridge.js` (iOS variant) |
-| File storage layout | `shared/src/*/data/FileRepository.*.kt` |
+| File storage layout | `shared/src/*/data/FileRepository.*.kt` (both platforms; iOS via the framework) |
+| Settings storage | `shared/src/*/data/SettingsRepository.*.kt` |
+| Swift ↔ Kotlin bridge conveniences | `iosApp/KaappiStudio/Helpers/SharedModels.swift` |
 | Supported Scheme version | The `kaappi.wasm` binary itself ([kaappi/kaappi](https://github.com/kaappi/kaappi)) |

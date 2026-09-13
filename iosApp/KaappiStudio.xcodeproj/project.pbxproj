@@ -8,18 +8,19 @@
 
 /* Begin PBXBuildFile section */
 		1DE35B6EE560AD6BE72E2F09 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9643D66D145E0AB75BEB9AB3 /* SettingsView.swift */; };
+		27DECCA65BE72FC572D065BF /* FileBrowserViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA4CF8B3445F4A108F71EF4 /* FileBrowserViewModelTests.swift */; };
 		2C96CCABAD8719758653D4D4 /* ExamplesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6829DA3A5C679693AF73E567 /* ExamplesView.swift */; };
 		484F2DADC5EE0D488292E569 /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC5A5B304EDDB2A850D2B9B1 /* EditorViewModel.swift */; };
+		48B3A72E56003324C1004E3D /* SharedFrameworkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D03F6E25D02E9573A074670 /* SharedFrameworkTests.swift */; };
 		70E7A1CCE81C171A3B1F64DC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7364D3DD5B8E52F6495ED333 /* Assets.xcassets */; };
 		77E7BEDF82241FFF3484E40E /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00C5C1B12E67A29B2BEFE86E /* EditorView.swift */; };
 		7C7486C2BF1F75E7F70059A1 /* WebViewAssetsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D552EDDA4AB6CC55BEC2E1 /* WebViewAssetsTests.swift */; };
+		7E06B4DC448555EC7136866D /* SharedModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B972C260D8ACD7B7E0BB9B9 /* SharedModels.swift */; };
 		AAC7204D05E1B40724CB0414 /* EditorViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27E7BE6302BA7F5631B4D51E /* EditorViewModelTests.swift */; };
-		B01630B9990330BFE053C2BC /* ExamplesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 171E753B95CE9D02B6953093 /* ExamplesTests.swift */; };
 		B23A1A6021BB253EE4B76BE4 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A997EA1E22BD679B52E5C8BA /* SettingsViewModel.swift */; };
 		D0843B029C9591A26EEEE0B6 /* SchemeWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC89621B83CFC65BED1F0D97 /* SchemeWebView.swift */; };
 		D24102F20CAAF31D9770843A /* FileBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9892934816D3E5DCD210496 /* FileBrowserView.swift */; };
 		DF768A79D59C7EF059B7C2E6 /* webview in Resources */ = {isa = PBXBuildFile; fileRef = F11D7A5CA03B2220EED06EB4 /* webview */; };
-		E19A6CEF799E7AAC43521B93 /* Examples.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BE3BAB6F3D5412230CE3C14 /* Examples.swift */; };
 		EFAE9AF99FE908280FF52A7B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A34AB77D984DA8228DA8F0C0 /* ContentView.swift */; };
 		F037672428FBC70BA17833F3 /* KaappiStudioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4400391A02F866A4C96A452 /* KaappiStudioApp.swift */; };
 		F07C98480949E0C5A5CD3967 /* FileBrowserViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 333B22CDAA1814DB88458506 /* FileBrowserViewModel.swift */; };
@@ -37,13 +38,13 @@
 
 /* Begin PBXFileReference section */
 		00C5C1B12E67A29B2BEFE86E /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
-		171E753B95CE9D02B6953093 /* ExamplesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamplesTests.swift; sourceTree = "<group>"; };
+		1D03F6E25D02E9573A074670 /* SharedFrameworkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedFrameworkTests.swift; sourceTree = "<group>"; };
 		27E7BE6302BA7F5631B4D51E /* EditorViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModelTests.swift; sourceTree = "<group>"; };
 		333B22CDAA1814DB88458506 /* FileBrowserViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBrowserViewModel.swift; sourceTree = "<group>"; };
 		49D552EDDA4AB6CC55BEC2E1 /* WebViewAssetsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewAssetsTests.swift; sourceTree = "<group>"; };
 		5C4ACC8F331E1E6D3C713256 /* KaappiStudio.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = KaappiStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6829DA3A5C679693AF73E567 /* ExamplesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamplesView.swift; sourceTree = "<group>"; };
-		6BE3BAB6F3D5412230CE3C14 /* Examples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Examples.swift; sourceTree = "<group>"; };
+		6B972C260D8ACD7B7E0BB9B9 /* SharedModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedModels.swift; sourceTree = "<group>"; };
 		7364D3DD5B8E52F6495ED333 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		806FF4EF81067F3F1C94DB21 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9643D66D145E0AB75BEB9AB3 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -53,6 +54,7 @@
 		A997EA1E22BD679B52E5C8BA /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		AC5A5B304EDDB2A850D2B9B1 /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModel.swift; sourceTree = "<group>"; };
 		C9892934816D3E5DCD210496 /* FileBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBrowserView.swift; sourceTree = "<group>"; };
+		EDA4CF8B3445F4A108F71EF4 /* FileBrowserViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBrowserViewModelTests.swift; sourceTree = "<group>"; };
 		F11D7A5CA03B2220EED06EB4 /* webview */ = {isa = PBXFileReference; lastKnownFileType = folder; name = webview; path = KaappiStudio/Resources/webview; sourceTree = SOURCE_ROOT; };
 		FC89621B83CFC65BED1F0D97 /* SchemeWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemeWebView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -71,7 +73,8 @@
 			isa = PBXGroup;
 			children = (
 				27E7BE6302BA7F5631B4D51E /* EditorViewModelTests.swift */,
-				171E753B95CE9D02B6953093 /* ExamplesTests.swift */,
+				EDA4CF8B3445F4A108F71EF4 /* FileBrowserViewModelTests.swift */,
+				1D03F6E25D02E9573A074670 /* SharedFrameworkTests.swift */,
 				49D552EDDA4AB6CC55BEC2E1 /* WebViewAssetsTests.swift */,
 			);
 			path = KaappiStudioTests;
@@ -102,7 +105,7 @@
 		A2622FD9536F2F1C02A2811E /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
-				6BE3BAB6F3D5412230CE3C14 /* Examples.swift */,
+				6B972C260D8ACD7B7E0BB9B9 /* SharedModels.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -154,6 +157,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = A3DC64801A254B7F8A380E91 /* Build configuration list for PBXNativeTarget "KaappiStudio" */;
 			buildPhases = (
+				8F4F37C6474F1A1D015AEE25 /* Build shared Kotlin framework */,
 				AB98E2F6940F49EB5BE34549 /* Sources */,
 				E644FF26387F838545DB5DB0 /* Resources */,
 			);
@@ -233,6 +237,28 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		8F4F37C6474F1A1D015AEE25 /* Build shared Kotlin framework */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build shared Kotlin framework";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ -z \"${JAVA_HOME:-}\" ] && JH=$(/usr/libexec/java_home 2>/dev/null); then\n  export JAVA_HOME=\"$JH\"\nfi\ncd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		AB98E2F6940F49EB5BE34549 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -241,7 +267,6 @@
 				EFAE9AF99FE908280FF52A7B /* ContentView.swift in Sources */,
 				77E7BEDF82241FFF3484E40E /* EditorView.swift in Sources */,
 				484F2DADC5EE0D488292E569 /* EditorViewModel.swift in Sources */,
-				E19A6CEF799E7AAC43521B93 /* Examples.swift in Sources */,
 				2C96CCABAD8719758653D4D4 /* ExamplesView.swift in Sources */,
 				D24102F20CAAF31D9770843A /* FileBrowserView.swift in Sources */,
 				F07C98480949E0C5A5CD3967 /* FileBrowserViewModel.swift in Sources */,
@@ -249,6 +274,7 @@
 				D0843B029C9591A26EEEE0B6 /* SchemeWebView.swift in Sources */,
 				1DE35B6EE560AD6BE72E2F09 /* SettingsView.swift in Sources */,
 				B23A1A6021BB253EE4B76BE4 /* SettingsViewModel.swift in Sources */,
+				7E06B4DC448555EC7136866D /* SharedModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -257,7 +283,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				AAC7204D05E1B40724CB0414 /* EditorViewModelTests.swift in Sources */,
-				B01630B9990330BFE053C2BC /* ExamplesTests.swift in Sources */,
+				27DECCA65BE72FC572D065BF /* FileBrowserViewModelTests.swift in Sources */,
+				48B3A72E56003324C1004E3D /* SharedFrameworkTests.swift in Sources */,
 				7C7486C2BF1F75E7F70059A1 /* WebViewAssetsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -277,6 +304,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -297,11 +325,14 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 9QBV46NATP;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				INFOPLIST_FILE = KaappiStudio/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				OTHER_LDFLAGS = "$(inherited) -framework shared";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kaappi.studio.ios;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -379,6 +410,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -399,11 +431,14 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 9QBV46NATP;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				INFOPLIST_FILE = KaappiStudio/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				OTHER_LDFLAGS = "$(inherited) -framework shared";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kaappi.studio.ios;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
