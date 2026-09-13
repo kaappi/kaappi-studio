@@ -3,7 +3,7 @@ package com.kaappi.studio.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kaappi.studio.domain.RunResult
-import com.kaappi.studio.runtime.SchemeRunner
+import com.kaappi.studio.runtime.SchemeExecutor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class EditorViewModel(
-    private val runnerFactory: () -> SchemeRunner,
+    private val runnerFactory: () -> SchemeExecutor,
 ) : ViewModel() {
 
     private val _isRunning = MutableStateFlow(false)
@@ -78,30 +78,35 @@ class EditorViewModel(
         _isRunning.value = true
         _lastResult.value = null
 
-        // A fresh SchemeRunner per run: combined with the runner's unique
-        // per-run working directory, an abandoned run (see stopRun) can never
-        // interfere with a new one (issue #9 / #11).
+        // A fresh executor per run: combined with the runner's unique per-run
+        // working directory, a stopped run can never interfere with a new one
+        // (issue #9 / #11).
         val runner = runnerFactory()
         runJob = viewModelScope.launch {
-            val result = runner.run(code)
-            _lastResult.value = result
-            _isRunning.value = false
+            try {
+                val result = runner.run(code)
+                _lastResult.value = result
+                _isRunning.value = false
+            } finally {
+                // A no-op after a normal result. When the job is cancelled —
+                // by stopRun() or because the ViewModel was cleared — this
+                // is what actually terminates the program.
+                runner.stop()
+            }
         }
     }
 
     /**
-     * Stops tracking the current run and unblocks the UI immediately.
+     * Terminates the current run and unblocks the UI immediately.
      *
-     * Chicory has no cooperative cancellation, so there is no way to interrupt
-     * the WASM: the abandoned job keeps running on its dedicated single-thread
-     * executor until the program finishes on its own — for an infinite loop,
-     * that means a thread and a CPU core stay busy indefinitely (actually
-     * stopping the execution would require moving the runner into a separate
-     * process). The abandoned run works in its own isolated working directory,
-     * its output is discarded, and it never occupies the shared Dispatchers.IO
-     * pool, so it cannot starve later runs or other app work. When the
-     * surrounding ViewModel is cleared, viewModelScope is cancelled the same
-     * way.
+     * Cancelling the run job reaches the executor's `stop()` through the
+     * `finally` in [runCode]. In the app that executor is an
+     * [com.kaappi.studio.runtime.IsolatedSchemeRunner], which kills the
+     * `:runner` process the program is executing in, so a runaway program
+     * really dies (issue #24). Any result the run might still deliver is
+     * ignored: the job is cancelled and the stop notice below stands. Clearing
+     * the ViewModel cancels `viewModelScope` and stops an in-flight run the
+     * same way.
      */
     fun stopRun() {
         val job = runJob ?: return

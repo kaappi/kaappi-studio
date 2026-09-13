@@ -14,10 +14,12 @@ CodeMirror 6 code editor. Scheme execution takes a different path on each platfo
 │        │   editor.js (CodeMirror 6)                         │
 │        │     ▲ JSON messages via @JavascriptInterface       │
 │        │                                                    │
-│        └── SchemeRunner: Chicory JVM WASM runtime           │
-│            executes kaappi.wasm natively (own run thread)   │
-│                                                             │
-│  :shared (KMP): examples, File/Settings repositories        │
+│        └── IsolatedSchemeRunner ──(Messenger)──┐            │
+│                                                │            │
+│  :shared (KMP): examples, File/Settings repos  │            │
+├──────────────────── :runner process ───────────┼────────────┤
+│  SchemeRunnerService → SchemeRunner: Chicory   ◄┘           │
+│  executes kaappi.wasm natively; Stop kills the process      │
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────── iOS ─────────────────────────────┐
@@ -113,7 +115,13 @@ Kover measures the module's coverage on the Android host.
 app/src/main/java/com/kaappi/studio/
 ├── MainActivity.kt          # navigation drawer, top bar, save dialog, run/save wiring
 ├── bridge/KaappiBridge.kt   # @JavascriptInterface receiver for WebView messages
-├── runtime/SchemeRunner.kt  # Chicory WASI execution of kaappi.wasm
+├── runtime/
+│   ├── SchemeExecutor.kt        # one run: run(code) + stop()
+│   ├── IsolatedSchemeRunner.kt  # app-process client: binds the :runner service, kills it on Stop
+│   ├── IsolatedRunSession.kt    # transport-free stop/pid/death ordering (unit tested)
+│   ├── RunnerProtocol.kt        # Messenger message ids; results travel as files
+│   ├── SchemeRunnerService.kt   # bound service in android:process=":runner"
+│   └── SchemeRunner.kt          # Chicory WASI execution of kaappi.wasm (in-process engine)
 ├── ui/screens/              # Editor, Examples, FileBrowser, Settings screens
 ├── ui/theme/                # Material 3 theme ("Dark Roast" palette)
 └── viewmodel/               # Editor / FileBrowser / Settings ViewModels (StateFlow)
@@ -123,15 +131,21 @@ Run flow (Android):
 
 1. The Play button evaluates `window.kaappiAPI?.getCode()` in the WebView; the JS result
    (a JSON-encoded string) comes back through the `evaluateJavascript` callback.
-2. `EditorViewModel.runCode()` builds a fresh `SchemeRunner` and invokes it on the
-   runner's own single-thread executor (one daemon thread per run, never the shared
-   `Dispatchers.IO` pool). While a run is in progress the Play button is replaced by a
-   Stop button; `EditorViewModel.stopRun()` cancels the run job and unblocks the UI.
+2. `EditorViewModel.runCode()` builds a fresh `IsolatedSchemeRunner`, which binds
+   `SchemeRunnerService` — declared with `android:process=":runner"`, so Android
+   starts (or reuses) a second app process — and sends it the program over a
+   `Messenger`. The service acknowledges with its pid and then runs the program
+   through `SchemeRunner` on a dedicated single-thread executor (one daemon thread
+   per run, never the shared `Dispatchers.IO` pool). While a run is in progress the
+   Play button is replaced by a Stop button.
 3. `SchemeRunner` writes the code to a unique per-run directory
    `cacheDir/kaappi-run/run-<uuid>/program.scm`, configures WASI with args
    `["kaappi", "program.scm"]`, instantiates the shared `kaappi.wasm` module in a
    fresh `Store`, and captures stdout/stderr into memory buffers.
-4. A `RunResult` flows back to the output pane, including elapsed milliseconds.
+4. The service writes stdout/stderr to `cacheDir/kaappi-run/result-<uuid>/` and
+   replies with the paths (a Binder transaction is capped at ~1 MB; program output is
+   not). The client reads and deletes them, and a `RunResult` flows back to the output
+   pane, including elapsed milliseconds.
 
 Details worth knowing:
 
@@ -143,16 +157,26 @@ Details worth knowing:
   `setCodeBase64` (the `setEditorCode` path).
 - Chicory throws when the WASI program calls `exit`; `SchemeRunner` treats
   `exit code: 0` messages as success and everything else as stderr output.
-- The parsed WASM module is cached (shared by the per-run `SchemeRunner` instances);
-  each run re-instantiates but does not re-parse.
-- Stop abandons the run rather than killing it: Chicory has no cooperative
-  cancellation, so there is no way to interrupt the WASM — the abandoned execution
-  keeps running on its dedicated single-thread executor until the program finishes
-  on its own (for an infinite loop, indefinitely, consuming that thread and CPU).
-  Its output is discarded and it works in its own per-run directory, so it cannot
-  interfere with later runs; because it never occupies the shared `Dispatchers.IO`
-  pool, it cannot starve other work either. Actually stopping the execution would
-  require moving the runner into a separate process (issue #24).
+- The parsed WASM module is cached once per `:runner` process (shared by the
+  per-run `SchemeRunner` instances); each run re-instantiates but does not re-parse.
+  The process survives between runs as a cached process, so consecutive runs stay
+  warm; a run after a Stop pays a cold start and a re-parse.
+- Stop kills the program (issue #24). Chicory 1.7.5 has no interrupt or fuel
+  hooks, so the WASM cannot be interrupted from inside a process; instead nothing
+  but Scheme programs runs in `:runner`, and `EditorViewModel.stopRun()` cancels
+  the run job, whose `finally` calls `IsolatedSchemeRunner.stop()`: it unbinds the
+  service (so the system does not restart it) and `Process.killProcess`es the pid
+  the service reported. The ordering rules live in `IsolatedRunSession` and are
+  unit tested: a Stop that lands before the pid ack arrives kills the process as
+  soon as the ack does; a result or process death arriving after Stop is ignored;
+  Stop after a normal result kills nothing. Clearing the ViewModel cancels
+  `viewModelScope` and stops an in-flight run the same way.
+- A program that exhausts memory or crashes the runtime takes the `:runner`
+  process down, not the app; the client sees `onServiceDisconnected` and shows
+  "The Scheme runner process exited unexpectedly". A killed run leaves its
+  `program.scm` (and any uncollected result files) under `cacheDir/kaappi-run/`;
+  `SchemeRunnerService.onCreate` sweeps that directory, which is safe because no
+  run can be in flight when a runner process comes up.
 
 ### `iosApp/` — iOS
 
@@ -231,7 +255,7 @@ Selecting an example or file pushes its code into the editor via the
 | Example programs | `shared/.../data/ExampleRepository.kt` (both platforms) |
 | Editor keymap/highlighting | `editor.js` (both webview dirs) |
 | Editor/output colors | `styles.css` (both), `app/.../ui/theme/`, iOS assets |
-| Scheme execution behavior | Android: `runtime/SchemeRunner.kt` · iOS: `bridge.js` (iOS variant) |
+| Scheme execution behavior | Android: `runtime/SchemeRunner.kt` (engine), `runtime/IsolatedSchemeRunner.kt` + `SchemeRunnerService.kt` (process isolation, Stop) · iOS: `bridge.js` (iOS variant) |
 | File storage layout | `shared/src/*/data/FileRepository.*.kt` (both platforms; iOS via the framework) |
 | Settings storage | `shared/src/*/data/SettingsRepository.*.kt` |
 | Swift ↔ Kotlin bridge conveniences | `iosApp/KaappiStudio/Helpers/SharedModels.swift` |

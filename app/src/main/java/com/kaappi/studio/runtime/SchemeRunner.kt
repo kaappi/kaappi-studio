@@ -15,10 +15,20 @@ import java.io.File
 import java.util.UUID
 import java.util.concurrent.Executors
 
+/**
+ * Executes `kaappi.wasm` with Chicory inside the calling process.
+ *
+ * Chicory 1.7.5 has no interrupt or fuel hooks, so a program started here
+ * cannot be stopped: [stop] is a no-op and an abandoned run keeps its
+ * dedicated thread busy until the WASM finishes on its own. That is why the
+ * app never runs programs through this class directly — [SchemeRunnerService]
+ * hosts it in the separate `:runner` process, which [IsolatedSchemeRunner]
+ * can kill (issue #24).
+ */
 class SchemeRunner(
     private val context: Context,
     private val moduleCache: ModuleCache,
-) {
+) : SchemeExecutor {
 
     /**
      * Parses the WASM module once so it can be shared by several [SchemeRunner]
@@ -58,7 +68,7 @@ class SchemeRunner(
     internal fun newRunDirectory(): File =
         File(File(context.cacheDir, "kaappi-run"), "run-${UUID.randomUUID()}")
 
-    suspend fun run(code: String): RunResult = try {
+    override suspend fun run(code: String): RunResult = try {
         withContext(runDispatcher) {
             val stdout = ByteArrayOutputStream()
             val stderr = ByteArrayOutputStream()
@@ -111,7 +121,17 @@ class SchemeRunner(
         }
     } finally {
         // Completed runs release their thread right away; an abandoned run's
-        // daemon thread lives until the WASM itself finishes (see stopRun).
+        // daemon thread lives until the WASM itself finishes (see [stop]).
         runExecutor.shutdown()
+    }
+
+    /**
+     * Cannot interrupt Chicory: the program keeps running on its daemon thread
+     * until it finishes by itself. Its output is discarded by whoever stopped
+     * awaiting [run], and it works in its own per-run directory, so it cannot
+     * affect later runs. Use [IsolatedSchemeRunner] when a stop has to be real.
+     */
+    override fun stop() {
+        // Intentionally empty: see the KDoc.
     }
 }

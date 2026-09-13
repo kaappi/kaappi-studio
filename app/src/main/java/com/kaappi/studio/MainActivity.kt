@@ -59,7 +59,7 @@ import com.kaappi.studio.data.SchemeFileNames
 import com.kaappi.studio.data.SettingsRepository
 import com.kaappi.studio.domain.SchemeFile
 import com.kaappi.studio.domain.ThemeMode
-import com.kaappi.studio.runtime.SchemeRunner
+import com.kaappi.studio.runtime.IsolatedSchemeRunner
 import com.kaappi.studio.ui.screens.EditorScreen
 import com.kaappi.studio.ui.screens.ExamplesScreen
 import com.kaappi.studio.ui.screens.FileBrowserScreen
@@ -97,12 +97,9 @@ class MainActivity : ComponentActivity() {
     private val editorVM: EditorViewModel by viewModels {
         viewModelFactory {
             initializer {
-                // The parsed WASM module is shared; every run gets a fresh
-                // SchemeRunner with its own working directory (issues #9, #11).
-                val moduleCache = SchemeRunner.ModuleCache {
-                    assets.open("kaappi.wasm").use { it.readBytes() }
-                }
-                EditorViewModel { SchemeRunner(applicationContext, moduleCache) }
+                // Every run gets a fresh runner bound to the `:runner` process,
+                // so Stop can kill the program (issues #9, #11, #24).
+                EditorViewModel { IsolatedSchemeRunner(applicationContext) }
             }
         }
     }
