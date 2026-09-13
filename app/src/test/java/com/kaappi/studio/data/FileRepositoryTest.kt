@@ -1,12 +1,12 @@
 package com.kaappi.studio.data
 
+import com.kaappi.studio.assertThrowsSuspend
 import com.kaappi.studio.contextWithFilesDir
 import java.io.File
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
 import org.junit.Rule
@@ -23,12 +23,6 @@ class FileRepositoryTest {
         val filesDir = tmp.newFolder()
         return FileRepository(contextWithFilesDir(filesDir)) to File(filesDir, "schemes")
     }
-
-    /** `assertThrows` for suspend calls: the repository API is suspend-only (issue #12). */
-    private inline fun <reified T : Throwable> assertThrowsSuspend(
-        message: String? = null,
-        crossinline block: suspend () -> Unit,
-    ): T = assertThrows(message, T::class.java) { runBlocking { block() } }
 
     @Test
     fun writeFile_acceptsValidNames_andAppendsScmOnce() = runBlocking<Unit> {

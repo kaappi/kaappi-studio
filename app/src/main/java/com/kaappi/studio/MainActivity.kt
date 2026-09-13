@@ -254,19 +254,23 @@ private fun KaappiStudioApp(
     // inside the repository (issue #12): each is launched on the composition
     // scope, so click handlers and JS callbacks never block the main thread.
     // State updates run back on Main after the I/O completes.
-    fun createEmptyFile(name: String) {
-        scope.launch {
-            try {
-                val saved = fileBrowserVM.saveFile(name, "")
-                editorVM.setCurrentFile(saved.name)
-                editorVM.setPendingCode("")
-                currentSection = NavSection.EDITOR
-            } catch (e: FileRepositoryException) {
-                showFileError("Could not create file", e)
-            } catch (e: IllegalArgumentException) {
-                showFileError("Could not create file", e)
-            }
+    // Shared by createEmptyFile (the overwrite dialog) and newFile, so the
+    // new-file decision and the write stay within a single coroutine.
+    suspend fun createEmptyFileInternal(name: String) {
+        try {
+            val saved = fileBrowserVM.saveFile(name, "")
+            editorVM.setCurrentFile(saved.name)
+            editorVM.setPendingCode("")
+            currentSection = NavSection.EDITOR
+        } catch (e: FileRepositoryException) {
+            showFileError("Could not create file", e)
+        } catch (e: IllegalArgumentException) {
+            showFileError("Could not create file", e)
         }
+    }
+
+    fun createEmptyFile(name: String) {
+        scope.launch { createEmptyFileInternal(name) }
     }
 
     fun openFile(file: SchemeFile) {
@@ -293,7 +297,7 @@ private fun KaappiStudioApp(
                 if (fileBrowserVM.fileExists(name)) {
                     overwriteTarget = SchemeFileNames.sanitize(name)
                 } else {
-                    createEmptyFile(name)
+                    createEmptyFileInternal(name)
                 }
             } catch (e: IllegalArgumentException) {
                 showFileError("Could not create file", e)
