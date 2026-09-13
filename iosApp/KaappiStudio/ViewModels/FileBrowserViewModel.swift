@@ -31,9 +31,12 @@ class FileBrowserViewModel: ObservableObject {
     }
 
     func refresh() async {
-        // listFiles only throws for cancellation; an unreadable directory
-        // lists as empty.
-        files = (try? await repository.listFiles()) ?? []
+        // listFiles never throws for I/O (an unreadable directory lists as
+        // empty — see the expect KDoc); the only error that can cross the
+        // bridge is cancellation, and a cancelled refresh must leave the
+        // list as it was rather than blank it.
+        guard let listed = try? await repository.listFiles() else { return }
+        files = listed
     }
 
     /// Throws on invalid names or write failures — it never fabricates success.
