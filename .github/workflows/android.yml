@@ -19,12 +19,6 @@ jobs:
       - name: Check webview asset parity (Android vs iOS copies)
         run: bash scripts/check-webview-assets.sh
 
-      # Runs unconditionally (no path filter): Examples.swift is iOS code, but
-      # a Swift-only edit must still fail here when the two copies drift, and
-      # Android CI is the only workflow that runs the check.
-      - name: Check example parity (Kotlin vs Swift)
-        run: python3 scripts/check-examples-parity.py
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:

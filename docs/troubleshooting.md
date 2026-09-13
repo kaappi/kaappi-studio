@@ -68,10 +68,22 @@ compile tasks target JVM 11 bytecode (`jvmTarget = 11`).
 set up for releases. Without it, skip the upload step; the AAB in
 `app/build/outputs/bundle/release/` can be uploaded manually through the Play Console.
 
-## Scheme examples look different on Android vs iOS
+## iOS build fails in "Build shared Kotlin framework"
 
-Example programs are duplicated in
-[`ExampleRepository.kt`](../shared/src/commonMain/kotlin/com/kaappi/studio/data/ExampleRepository.kt)
-and [`Examples.swift`](../iosApp/KaappiStudio/Helpers/Examples.swift). If one was
-updated without the other, they drift — see
-[Development](development.md#add-or-edit-an-example-program).
+The iOS app links `:shared` as a static framework that Xcode builds through Gradle in a
+pre-build script phase (`iosApp/project.yml`). When that phase fails:
+
+- **`Unable to locate a Java Runtime` / `JAVA_HOME is not set`** — Xcode's script
+  environment does not see your shell profile. Install a JDK 17+ where
+  `/usr/libexec/java_home` can find it (e.g. Temurin from Homebrew, then
+  `sudo ln -sfn /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-17.jdk`),
+  or launch Xcode with `JAVA_HOME` exported.
+- **A Kotlin compile error in `shared/src/iosMain`** — run the same task from a terminal
+  for a readable log: `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64`.
+- **`framework 'shared' not found` at link time** — the Gradle phase did not run or
+  wrote to a different configuration/SDK directory than Xcode is linking against.
+  Check `shared/build/xcode-frameworks/<Debug|Release>/<sdk>/shared.framework` exists;
+  a clean build (⇧⌘K) then rebuild regenerates it.
+- **`No such module 'shared'`** — same cause as above (the header lives inside the
+  framework directory), or `xcodegen generate` was not re-run after a `project.yml`
+  change, so `FRAMEWORK_SEARCH_PATHS` is missing from the target.

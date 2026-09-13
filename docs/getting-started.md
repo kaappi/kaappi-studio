@@ -6,7 +6,7 @@ Set up a development environment and get Kaappi Studio running on Android and iO
 
 | Tool | Version | Needed for |
 |------|---------|-----------|
-| JDK | 17+ | All Gradle builds (CI uses Temurin 17; Gradle downloads matching toolchains via foojay) |
+| JDK | 17+ | All Gradle builds — including every iOS build, which runs Gradle to produce the shared Kotlin framework (CI uses Temurin 17; Gradle downloads matching toolchains via foojay) |
 | Android Studio | Current | Android development, emulator/device |
 | Xcode | 15+ | iOS development, simulator/device |
 | XcodeGen (`brew install xcodegen`) | Latest | Regenerating the Xcode project after adding/removing iOS files |
@@ -88,6 +88,12 @@ open iosApp/KaappiStudio.xcodeproj
 ```
 
 Select the `KaappiStudio` scheme and an iPhone simulator, then Run.
+
+The first build takes a few minutes: a pre-build script phase runs
+`./gradlew :shared:embedAndSignAppleFrameworkForXcode`, which downloads the Kotlin/Native
+toolchain and links the `shared` static framework the app imports. Xcode needs to find a
+JDK for that — the phase honours `JAVA_HOME` and otherwise asks `/usr/libexec/java_home`
+(see [Troubleshooting](troubleshooting.md#ios-build-fails-in-build-shared-kotlin-framework)).
 
 Regenerate the project whenever you add, remove, or move files under `iosApp/` —
 otherwise the new files are not part of the build:

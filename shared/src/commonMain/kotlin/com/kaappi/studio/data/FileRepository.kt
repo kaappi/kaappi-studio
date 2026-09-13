@@ -1,6 +1,7 @@
 package com.kaappi.studio.data
 
 import com.kaappi.studio.domain.SchemeFile
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Thrown by [FileRepository] read/write operations on I/O failure (missing or
@@ -11,9 +12,9 @@ class FileRepositoryException(message: String, cause: Throwable? = null) : Excep
 
 /**
  * Canonical, platform-independent file-name handling for user Scheme files.
- * Both [FileRepository] actuals (and, on iOS, the Swift copy of this rule in
- * `FileBrowserViewModel.swift`) validate through it, so a hostile name behaves
- * identically everywhere.
+ * Both [FileRepository] actuals validate through it, and the iOS app calls it
+ * through the shared framework, so a hostile name behaves identically
+ * everywhere.
  */
 object SchemeFileNames {
     /** Extension appended to every stored file. */
@@ -31,6 +32,7 @@ object SchemeFileNames {
      * "..", so a hostile name can never escape the schemes directory or form a
      * path.
      */
+    @Throws(IllegalArgumentException::class)
     fun sanitize(name: String): String {
         val trimmed = name.trim()
         require(trimmed.isNotEmpty()) { "File name must not be empty" }
@@ -44,8 +46,7 @@ object SchemeFileNames {
     /**
      * Appends [EXTENSION] unconditionally. Callers must pass a sanitized base
      * name: [sanitize] strips any trailing extension, so a base ending in
-     * [EXTENSION] would double it. The Swift mirror in
-     * `FileBrowserViewModel.swift` behaves the same way.
+     * [EXTENSION] would double it.
      */
     fun withExtension(base: String): String = "$base$EXTENSION"
 }
@@ -86,11 +87,23 @@ object SchemeFileNames {
  *   unreadable or non-UTF-8 file stays listed and deletable; the failure or
  *   lossy decoding surfaces from [readFile][FileRepository.readFile] when the
  *   file is opened.
+ *
+ * The `@Throws` annotations are part of the contract too: the iOS app calls
+ * these through the Kotlin/Native framework, and only annotated exceptions
+ * surface in Swift as thrown `NSError`s — an unannotated Kotlin exception
+ * terminates the process.
  */
 expect class FileRepository {
     suspend fun listFiles(): List<SchemeFile>
+
+    @Throws(FileRepositoryException::class, CancellationException::class)
     suspend fun readFile(path: String): String
+
+    @Throws(FileRepositoryException::class, IllegalArgumentException::class, CancellationException::class)
     suspend fun writeFile(name: String, content: String): SchemeFile
+
     suspend fun deleteFile(path: String): Boolean
+
+    @Throws(IllegalArgumentException::class, CancellationException::class)
     suspend fun renameFile(oldPath: String, newName: String): SchemeFile?
 }

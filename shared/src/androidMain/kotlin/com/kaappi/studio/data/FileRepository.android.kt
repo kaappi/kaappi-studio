@@ -2,6 +2,7 @@ package com.kaappi.studio.data
 
 import android.content.Context
 import com.kaappi.studio.domain.SchemeFile
+import kotlin.coroutines.cancellation.CancellationException
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +35,7 @@ actual class FileRepository(context: Context) {
             ?: emptyList()
     }
 
+    @Throws(FileRepositoryException::class, CancellationException::class)
     actual suspend fun readFile(path: String): String = withContext(Dispatchers.IO) {
         // Contract: throw on missing/unreadable files — never return "" (see expect KDoc).
         try {
@@ -43,6 +45,7 @@ actual class FileRepository(context: Context) {
         }
     }
 
+    @Throws(FileRepositoryException::class, IllegalArgumentException::class, CancellationException::class)
     actual suspend fun writeFile(name: String, content: String): SchemeFile = withContext(Dispatchers.IO) {
         val file = File(dir, SchemeFileNames.withExtension(SchemeFileNames.sanitize(name)))
         // Contract: atomic write — the temp file is fully written before it
@@ -62,6 +65,7 @@ actual class FileRepository(context: Context) {
         File(path).delete()
     }
 
+    @Throws(IllegalArgumentException::class, CancellationException::class)
     actual suspend fun renameFile(oldPath: String, newName: String): SchemeFile? = withContext(Dispatchers.IO) {
         val old = File(oldPath)
         val new = File(old.parentFile, SchemeFileNames.withExtension(SchemeFileNames.sanitize(newName)))

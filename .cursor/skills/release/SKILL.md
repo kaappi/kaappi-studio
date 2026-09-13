@@ -13,7 +13,9 @@ Build and release both platforms from a single version tag. Bumps Android and iO
 - Working tree is clean, on `main`, up to date with origin
 - Signing keystore via `keystore.properties` at project root (Android)
 - Google Play service account key at `app/play-service-account.json` (Android upload)
-- Xcode installed with code signing configured (iOS)
+- Xcode installed with code signing configured (iOS), plus a JDK 17+ that
+  `/usr/libexec/java_home` can find — `xcodebuild archive` builds the shared Kotlin
+  framework through Gradle
 - `kaappi.wasm` binary in `app/src/main/assets/` and `iosApp/KaappiStudio/Resources/webview/` (run `bash scripts/fetch-wasm.sh` if missing)
 
 ## Workflow

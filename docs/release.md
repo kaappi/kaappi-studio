@@ -27,6 +27,8 @@ A version bump means updating **five files** (plus the tag):
 - Android signing: `keystore.properties` at the repo root + `app/upload-keystore.jks`
 - Play upload: `app/play-service-account.json`
 - iOS signing: Xcode configured with development team `9QBV46NATP` (set in `project.yml`)
+- iOS build: a JDK 17+ visible to Xcode's script phases (`/usr/libexec/java_home` or
+  `JAVA_HOME`) — the archive builds the shared Kotlin framework through Gradle
 - `kaappi.wasm` present in both
   `app/src/main/assets/` (+`webview/`) and `iosApp/KaappiStudio/Resources/webview/`
   (`bash scripts/fetch-wasm.sh` and copy — see [Getting Started](getting-started.md#wasm-binary-required))

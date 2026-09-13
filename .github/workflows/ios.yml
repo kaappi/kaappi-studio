@@ -16,6 +16,30 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app
 
+      # The app links `:shared` as a Kotlin/Native static framework, built by
+      # a Gradle run-script phase inside xcodebuild (see iosApp/project.yml).
+      # xcodebuild inherits JAVA_HOME from this job's environment.
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Cache Kotlin/Native toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+
+      # Built here first so a shared/iosMain compile error fails with a
+      # readable Gradle log instead of buried inside xcodebuild output. The
+      # Xcode run-script phase then finds the task up to date.
+      - name: Build shared Kotlin framework (simulator)
+        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+
       - name: Build iOS app
         working-directory: iosApp
         run: |

@@ -1,43 +1,35 @@
 import SwiftUI
+import shared
 
-enum ThemeMode: String, CaseIterable {
-    case light = "Light"
-    case dark = "Dark"
-    case system = "System"
-}
-
-// Font-size bounds of the settings contract (shared SettingsRepository.kt,
-// MIN_FONT_SIZE/MAX_FONT_SIZE/DEFAULT_FONT_SIZE) — keep the two in sync.
-private let fontSizeRange = 10...24
-private let defaultFontSize = 14
-
+/// Main-actor front for the shared Kotlin `SettingsRepository`.
+///
+/// Storage keys, the theme fallback and the font-size range/clamping are the
+/// repository's contract (`SettingsRepository.kt`); this class only mirrors
+/// the values into published properties for SwiftUI.
+@MainActor
 class SettingsViewModel: ObservableObject {
+    /// Font sizes the settings contract accepts, shared with Android.
+    nonisolated static let fontSizeRange = Int(SettingsRepositoryKt.MIN_FONT_SIZE)...Int(SettingsRepositoryKt.MAX_FONT_SIZE)
+
     @Published var themeMode: ThemeMode {
-        didSet { UserDefaults.standard.set(themeMode.rawValue, forKey: "theme_mode") }
+        didSet { repository.setThemeMode(mode: themeMode) }
     }
     @Published var fontSize: Int {
-        didSet {
-            // Contract: clamp into the valid range so nothing invalid is stored.
-            UserDefaults.standard.set(
-                min(max(fontSize, fontSizeRange.lowerBound), fontSizeRange.upperBound),
-                forKey: "font_size")
-        }
+        // The repository clamps into `fontSizeRange` before storing.
+        didSet { repository.setFontSize(size: Int32(fontSize)) }
     }
 
-    init() {
-        let saved = UserDefaults.standard.string(forKey: "theme_mode") ?? "System"
-        self.themeMode = ThemeMode(rawValue: saved) ?? .system
-        let size = UserDefaults.standard.integer(forKey: "font_size")
-        // Contract: only in-range stored values are trusted; anything else
-        // (including a stored 0) falls back to the default.
-        self.fontSize = fontSizeRange.contains(size) ? size : defaultFontSize
+    private let repository: SettingsRepository
+
+    init(repository: SettingsRepository = SettingsRepository()) {
+        self.repository = repository
+        themeMode = repository.getThemeMode()
+        fontSize = Int(repository.getFontSize())
     }
 
     var colorScheme: ColorScheme? {
-        switch themeMode {
-        case .light: return .light
-        case .dark: return .dark
-        case .system: return nil
-        }
+        if themeMode == ThemeMode.light { return .light }
+        if themeMode == ThemeMode.dark { return .dark }
+        return nil
     }
 }

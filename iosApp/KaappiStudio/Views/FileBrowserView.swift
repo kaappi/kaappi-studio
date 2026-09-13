@@ -1,4 +1,5 @@
 import SwiftUI
+import shared
 
 struct FileBrowserView: View {
     @StateObject private var viewModel = FileBrowserViewModel()
@@ -7,6 +8,7 @@ struct FileBrowserView: View {
     @State private var overwriteTarget: String?
     @State private var errorMessage: String?
     @State private var loadErrorMessage: String?
+    @State private var deleteErrorMessage: String?
     let onFileLoad: (String, String) -> Void
 
     var body: some View {
@@ -24,16 +26,18 @@ struct FileBrowserView: View {
                     List {
                         ForEach(viewModel.files) { file in
                             Button {
-                                do {
-                                    // Re-read through the throwing readFile:
-                                    // the list's cached content is a
-                                    // best-effort snapshot, and loading a
-                                    // fabricated "" would let the next save
-                                    // destroy the real file.
-                                    let content = try viewModel.readFile(path: file.path)
-                                    onFileLoad(file.name, content)
-                                } catch {
-                                    showLoadError(error)
+                                Task { @MainActor in
+                                    do {
+                                        // The list carries no contents (the
+                                        // shared contract never reads files
+                                        // while listing); readFile throws
+                                        // rather than fabricating "" that a
+                                        // later save would persist.
+                                        let content = try await viewModel.readFile(path: file.path)
+                                        onFileLoad(file.name, content)
+                                    } catch {
+                                        showLoadError(error)
+                                    }
                                 }
                             } label: {
                                 HStack {
@@ -43,7 +47,7 @@ struct FileBrowserView: View {
                                         Text("\(file.name).scm")
                                             .font(.subheadline.weight(.medium))
                                             .foregroundColor(.primary)
-                                        Text(file.lastModified, style: .date)
+                                        Text(file.modifiedDate, style: .date)
                                             .font(.caption)
                                             .foregroundColor(.secondary)
                                     }
@@ -56,8 +60,14 @@ struct FileBrowserView: View {
                             // the loop would re-index a mutated array and delete
                             // the wrong files for a multi-row IndexSet.
                             let paths = indices.map { viewModel.files[$0].path }
-                            for path in paths {
-                                viewModel.deleteFile(path: path)
+                            Task { @MainActor in
+                                for path in paths {
+                                    do {
+                                        try await viewModel.deleteFile(path: path)
+                                    } catch {
+                                        showDeleteError(error)
+                                    }
+                                }
                             }
                         }
                     }
@@ -85,13 +95,13 @@ struct FileBrowserView: View {
                     // main-actor turn first.
                     Task { @MainActor in
                         do {
-                            let base = try SchemeFileNames.sanitize(newFileName)
-                            if try viewModel.fileExists(name: base) {
+                            let base = try SchemeFileNames.shared.sanitize(name: newFileName)
+                            if try await viewModel.fileExists(name: base) {
                                 // Confirm before overwriting an existing file
                                 // with empty content (issue #10).
                                 overwriteTarget = base
                             } else {
-                                try createNewFile(base)
+                                try await createNewFile(base)
                             }
                         } catch {
                             showError(error)
@@ -113,7 +123,7 @@ struct FileBrowserView: View {
                     // alert's dismissal.
                     Task { @MainActor in
                         do {
-                            try createNewFile(target)
+                            try await createNewFile(target)
                         } catch {
                             showError(error)
                         }
@@ -140,12 +150,20 @@ struct FileBrowserView: View {
             } message: {
                 Text(loadErrorMessage ?? "")
             }
-            .onAppear { viewModel.refresh() }
+            .alert("Could Not Delete File", isPresented: Binding(
+                get: { deleteErrorMessage != nil },
+                set: { if !$0 { deleteErrorMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(deleteErrorMessage ?? "")
+            }
+            .task { await viewModel.refresh() }
         }
     }
 
-    private func createNewFile(_ name: String) throws {
-        let file = try viewModel.saveFile(name: name, content: "")
+    private func createNewFile(_ name: String) async throws {
+        let file = try await viewModel.saveFile(name: name, content: "")
         onFileLoad(file.name, "")
     }
 
@@ -156,6 +174,11 @@ struct FileBrowserView: View {
 
     private func showLoadError(_ error: Error) {
         loadErrorMessage = (error as? LocalizedError)?.errorDescription
+            ?? error.localizedDescription
+    }
+
+    private func showDeleteError(_ error: Error) {
+        deleteErrorMessage = (error as? LocalizedError)?.errorDescription
             ?? error.localizedDescription
     }
 }

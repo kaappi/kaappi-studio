@@ -14,7 +14,8 @@ Day-to-day workflows for contributors: building, testing, linting, CI, and commo
 | Coverage reports (Kover HTML) | `./gradlew :shared:koverHtmlReport :app:koverHtmlReport` |
 | Android release AAB + APK | `./gradlew assembleRelease bundleRelease` (needs signing — see [Release](release.md)) |
 | Regenerate Xcode project | `cd iosApp && xcodegen generate` |
-| iOS build (CLI) | `xcodebuild build -project iosApp/KaappiStudio.xcodeproj -scheme KaappiStudio -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO` — the simulator name depends on the installed Xcode; list available devices with `xcrun simctl list devices available` |
+| Shared Kotlin framework for the iOS simulator | `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64` — what the Xcode script phase runs; useful on its own for a readable Gradle log |
+| iOS build (CLI) | `xcodebuild build -project iosApp/KaappiStudio.xcodeproj -scheme KaappiStudio -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO` — runs Gradle for `:shared` (needs a JDK); the simulator name depends on the installed Xcode; list available devices with `xcrun simctl list devices available` |
 
 Gradle is configured with the configuration cache, parallel execution, and build caching
 (`gradle.properties`) — most incremental builds are fast.
@@ -38,15 +39,20 @@ GitHub Actions runs two workflows on every push/PR to `main`:
 
 ### [iOS CI](../.github/workflows/ios.yml) (`macos-latest`)
 
-1. `xcodebuild build` for an available iPhone simulator (`CODE_SIGNING_ALLOWED=NO`)
-2. `xcodebuild test` (same destination)
+1. JDK 17 (Temurin) + Gradle setup, with `~/.konan` (the Kotlin/Native toolchain) cached
+2. `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64` — compiles `shared/src/iosMain`
+   with a readable log before Xcode's script phase runs the same task
+3. `xcodebuild build` for an available iPhone simulator (`CODE_SIGNING_ALLOWED=NO`)
+4. `xcodebuild test` (same destination)
 
 Notes / gaps to be aware of:
 
 - **iOS CI never fetches `kaappi.wasm`** (and it's gitignored), so CI-built iOS apps
   compile fine but cannot execute Scheme at runtime. Fetch it manually for local work.
-- The iOS app itself has no test sources yet (the `KaappiStudioTests` target exists but
-  is empty).
+- The iOS tests (`iosApp/KaappiStudioTests/`) run on the simulator: the
+  `EditorViewModel` load queue, the Kotlin ↔ Swift bridge (`SharedFrameworkTests`),
+  a save/list/read/delete round trip through the shared `FileRepository`
+  (`FileBrowserViewModelTests`), and the bundled webview assets.
 
 ## Testing
 
@@ -56,6 +62,10 @@ Unit tests live in two places and run on the JVM (no emulator needed):
 |----------|----------|------|
 | `shared/src/commonTest/` | `ExampleRepository` integrity, `SchemeFile` serialization | `:shared:testAndroidHostTest` |
 | `app/src/test/` | `KaappiBridge` message handling, `SchemeRunner` execution paths, `FileRepository` contract, `EditorViewModel` / `FileBrowserViewModel` state | `:app:testDebugUnitTest` (or `:app:test`) |
+
+The iOS tests in `iosApp/KaappiStudioTests/` run on a simulator via the `KaappiStudio`
+scheme's test action (`xcodebuild test`, see the build table); they cover the Swift view
+models and the shared-framework bridge, not the SwiftUI views.
 
 Conventions:
 
@@ -93,32 +103,16 @@ baseline-clean — don't regenerate the baseline to make new violations pass.
 
 ### Add or edit an example program
 
-Examples exist in **two places** and must be kept in sync:
+Examples live in **one place**,
+`shared/src/commonMain/kotlin/com/kaappi/studio/data/ExampleRepository.kt`; both apps
+read the list through `:shared` (Android directly, iOS through the framework). Categories
+are fixed by `ExampleCategory`: Getting Started, Functions, Data Structures, Control
+Flow, Advanced.
 
-1. `shared/src/commonMain/kotlin/com/kaappi/studio/data/ExampleRepository.kt` (Android)
-2. `iosApp/KaappiStudio/Helpers/Examples.swift` (iOS)
-
-Use the same `id`, `title`, `description`, category, and code in both. Categories are
-fixed: Getting Started, Functions, Data Structures, Control Flow, Advanced. After adding
-an iOS file (if new), regenerate the Xcode project.
-
-A CI check diffs the two lists on every push and pull request — run it locally with:
-
-```bash
-python3 scripts/check-examples-parity.py
-```
-
-The check compares the *runtime strings*, not the raw source. It understands
-Kotlin raw strings with `trimMargin()` and Swift multiline literals (indentation
-stripping plus the `\\`, `\"`, `\n`, `\t`, `\r`, `\0` escapes). Write a Scheme
-character literal like `#\a` as `#\a` in Kotlin and `#\\a` in Swift — the check
-decodes both to the same value. String interpolation (`\(...)` in Swift) and
-unknown escapes fail the check loudly instead of comparing the wrong thing.
-
-Keep the workload small too: iOS runs Scheme inside the WebView's main thread, so huge
+Keep the workload small: iOS runs Scheme inside the WebView's main thread, so huge
 iteration counts or very long programs freeze the UI (see
 [architecture.md](architecture.md)). `ExampleRepositoryTest` enforces a per-example
-code-size budget on the Kotlin side.
+code-size budget.
 
 ### Update the Scheme engine (`kaappi.wasm`)
 
@@ -173,14 +167,23 @@ then commit the regenerated `KaappiStudio.xcodeproj/project.pbxproj`.
 Repositories are `expect`/`actual`: interfaces in
 `shared/src/commonMain/kotlin/com/kaappi/studio/data/`, implementations in
 `shared/src/androidMain/` and `shared/src/iosMain/`. Keep the three source sets in sync
-when changing signatures. Note the `:shared` module also has a plain `jvm()` target for
-fast JVM-side testing.
+when changing signatures. The iOS app calls the Kotlin API from Swift
+(`FileBrowserViewModel.swift`, `SettingsViewModel.swift`), so:
+
+- any exception a Swift caller must be able to catch has to be listed in `@Throws` on
+  the `expect` declaration and both actuals (`CancellationException` included on
+  `suspend` functions) — an unlisted Kotlin exception crashes the iOS app;
+- build the framework after a change (`./gradlew :shared:linkDebugFrameworkIosSimulatorArm64`
+  or just build in Xcode) and fix the Swift call sites the header change breaks.
+
+`shared/src/iosMain` is compiled by every iOS build and by iOS CI.
 
 ### Change the Android theme
 
 - Native colors: `app/src/main/java/com/kaappi/studio/ui/theme/`
 - Editor colors: `styles.css` (both webview dirs) + highlight palettes in `editor.js`
 - Theme mode persistence: `shared/src/androidMain/.../SettingsRepository.android.kt`
+  (the iOS counterpart is `shared/src/iosMain/.../SettingsRepository.ios.kt`)
 
 ## Code style
 
