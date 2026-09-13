@@ -15,7 +15,7 @@ CodeMirror 6 code editor. Scheme execution takes a different path on each platfo
 │        │     ▲ JSON messages via @JavascriptInterface       │
 │        │                                                    │
 │        └── SchemeRunner: Chicory JVM WASM runtime           │
-│            executes kaappi.wasm natively (Dispatchers.IO)   │
+│            executes kaappi.wasm natively (own run thread)   │
 │                                                             │
 │  :shared (KMP): domain models, File/Settings repositories   │
 └─────────────────────────────────────────────────────────────┘
@@ -91,8 +91,9 @@ Run flow (Android):
 
 1. The Play button evaluates `window.kaappiAPI?.getCode()` in the WebView; the JS result
    (a JSON-encoded string) comes back through the `evaluateJavascript` callback.
-2. `EditorViewModel.runCode()` builds a fresh `SchemeRunner` and invokes it on
-   `Dispatchers.IO`. While a run is in progress the Play button is replaced by a
+2. `EditorViewModel.runCode()` builds a fresh `SchemeRunner` and invokes it on the
+   runner's own single-thread executor (one daemon thread per run, never the shared
+   `Dispatchers.IO` pool). While a run is in progress the Play button is replaced by a
    Stop button; `EditorViewModel.stopRun()` cancels the run job and unblocks the UI.
 3. `SchemeRunner` writes the code to a unique per-run directory
    `cacheDir/kaappi-run/run-<uuid>/program.scm`, configures WASI with args
@@ -113,9 +114,13 @@ Details worth knowing:
 - The parsed WASM module is cached (shared by the per-run `SchemeRunner` instances);
   each run re-instantiates but does not re-parse.
 - Stop abandons the run rather than killing it: Chicory has no cooperative
-  cancellation, so the abandoned execution keeps running on `Dispatchers.IO` until
-  the program finishes on its own. Its output is discarded and it works in its own
-  per-run directory, so it cannot interfere with later runs.
+  cancellation, so there is no way to interrupt the WASM — the abandoned execution
+  keeps running on its dedicated single-thread executor until the program finishes
+  on its own (for an infinite loop, indefinitely, consuming that thread and CPU).
+  Its output is discarded and it works in its own per-run directory, so it cannot
+  interfere with later runs; because it never occupies the shared `Dispatchers.IO`
+  pool, it cannot starve other work either. Actually stopping the execution would
+  require moving the runner into a separate process (issue #24).
 
 ### `iosApp/` — iOS
 
