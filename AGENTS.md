@@ -43,7 +43,8 @@ Versions are centralized in `gradle/libs.versions.toml` (version catalog). JDK 1
 - **Two copies of the webview assets, kept in sync:**
   `app/src/main/assets/webview/` and `iosApp/KaappiStudio/Resources/webview/` both
   contain `index.html`, `bridge.js`, `editor.js`, `styles.css`,
-  `codemirror-bundle.mjs`. Changes must be applied to both. CI enforces this on every
+  `codemirror-bundle.mjs`. Changes must be applied to both (the bundle is rebuilt into
+  both copies by `bash scripts/codemirror-bundle/build.sh`). CI enforces this on every
   push (`scripts/check-webview-assets.sh`, run from the Android workflow; see
   [docs/development.md](docs/development.md)) — every file in the Android copy must
   be byte-identical on iOS. **Exception:** `bridge.js` intentionally differs — the

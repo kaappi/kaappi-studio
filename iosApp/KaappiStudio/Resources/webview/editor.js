@@ -1,7 +1,7 @@
 export async function createSchemeEditor({ parent, doc, isDark, onRun }) {
   try {
     const {
-      EditorView, EditorState, basicSetup, StreamLanguage,
+      EditorView, EditorState, Compartment, basicSetup, StreamLanguage,
       HighlightStyle, syntaxHighlighting, tags, scheme,
     } = await import("./codemirror-bundle.mjs");
 
@@ -35,26 +35,23 @@ export async function createSchemeEditor({ parent, doc, isDark, onRun }) {
     const highlightExtension = (dark) =>
       syntaxHighlighting(dark ? darkHighlight : lightHighlight);
 
-    // One extension list shared by creation and theme re-creation: anything
-    // added here survives a theme toggle instead of silently disappearing.
+    // The theme-dependent extensions live in one compartment so setTheme can
+    // swap them in place with a reconfigure effect. Everything else — the
+    // document, selection, scroll position and the undo history — is state
+    // the transaction leaves untouched (issue #30).
+    const themeCompartment = new Compartment();
+    const themeExtensions = (dark) => [editorTheme(dark), highlightExtension(dark)];
     const schemeLanguage = StreamLanguage.define(scheme);
-    const extensions = (dark) => [
-      basicSetup,
-      editorTheme(dark),
-      highlightExtension(dark),
-      schemeLanguage,
-    ];
 
-    // Native pushes setTheme on every UI update (including repeats with the
-    // same value), so ignore no-op changes. codemirror-bundle.mjs does not
-    // export Compartment, so a real theme change re-creates the editor state;
-    // doc, selection and scroll position are preserved, undo history is not
-    // (issue #30: switch to compartment.reconfigure once the bundle exports it).
     let currentDark = isDark;
     const view = new EditorView({
       state: EditorState.create({
         doc,
-        extensions: extensions(currentDark),
+        extensions: [
+          basicSetup,
+          themeCompartment.of(themeExtensions(currentDark)),
+          schemeLanguage,
+        ],
       }),
       parent,
     });
@@ -65,16 +62,13 @@ export async function createSchemeEditor({ parent, doc, isDark, onRun }) {
         changes: { from: 0, to: view.state.doc.length, insert: code },
       }),
       setTheme: (dark) => {
+        // Native pushes setTheme on every UI update (including repeats with
+        // the same value), so ignore no-op changes.
         if (dark === currentDark) return;
         currentDark = dark;
-        const { doc, selection } = view.state;
-        const scrollTop = view.scrollDOM.scrollTop;
-        view.setState(EditorState.create({
-          doc,
-          selection,
-          extensions: extensions(dark),
-        }));
-        view.scrollDOM.scrollTop = scrollTop;
+        view.dispatch({
+          effects: themeCompartment.reconfigure(themeExtensions(dark)),
+        });
       },
       destroy: () => view.destroy(),
     };
