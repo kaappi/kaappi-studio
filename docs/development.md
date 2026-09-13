@@ -148,6 +148,14 @@ To add an export, add it to `entry.mjs` and rebuild. To upgrade CodeMirror, bump
 versions in `package.json`, run `npm install` in that directory to refresh the lockfile,
 rebuild, and commit the lockfile together with both bundle copies.
 
+Android CI rebuilds the bundle from the lockfile on every push and fails if either
+committed copy differs (`build.sh --check`), so a hand-edited bundle or an `entry.mjs`
+change without a rebuild cannot land. Run the same check locally with:
+
+```bash
+bash scripts/codemirror-bundle/build.sh --check
+```
+
 A CI check (in the Android workflow, so it runs on Swift-only changes too) compares
 the two copies byte-for-byte on every push and pull request — run it locally with:
 
