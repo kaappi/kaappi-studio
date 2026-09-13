@@ -92,7 +92,8 @@ here; bugs in how Scheme code evaluates are upstream.
 
 - **Android:** the Play button pulls code out of the editor via
   `window.kaappiAPI?.getCode()`, then `SchemeRunner` executes it natively with Chicory
-  on `Dispatchers.IO`. WebView runs on a background thread — long programs are fine.
+  on a dedicated per-run thread (not the shared `Dispatchers.IO` pool). Long programs
+  are fine; Stop only abandons a run, it cannot kill it (see `docs/architecture.md`, #24).
 - **iOS:** the Play button calls `window.kaappiAPI?.runCode()` and the WASM runs
   **inside the WebView on its main thread** (WASI shim, no timeout). Long programs
   freeze the UI; keep iOS test programs short. `worker.js`/`runner.js` exist but are
