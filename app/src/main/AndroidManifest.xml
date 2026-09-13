@@ -18,5 +18,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Scheme programs run here, in their own process, so Stop can kill a
+             runaway program instead of merely abandoning it (issue #24). -->
+        <service
+            android:name=".runtime.SchemeRunnerService"
+            android:exported="false"
+            android:process=":runner" />
     </application>
 </manifest>

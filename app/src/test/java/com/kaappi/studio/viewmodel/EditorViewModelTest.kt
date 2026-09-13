@@ -1,11 +1,14 @@
 package com.kaappi.studio.viewmodel
 
 import com.kaappi.studio.contextWithCacheDir
+import androidx.lifecycle.ViewModelStore
 import com.kaappi.studio.domain.RunResult
+import com.kaappi.studio.runtime.SchemeExecutor
 import com.kaappi.studio.runtime.SchemeRunner
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
@@ -152,10 +155,82 @@ class EditorViewModelTest {
         assertNull(vm.lastResult.value)
     }
 
+    /**
+     * Stands in for the process-isolated runner: [run] suspends until
+     * [finish] or [stop] and records whether the ViewModel asked it to stop.
+     */
+    private class FakeExecutor : SchemeExecutor {
+        val result = CompletableDeferred<RunResult>()
+        var stopCalls = 0
+
+        override suspend fun run(code: String): RunResult = result.await()
+
+        override fun stop() {
+            stopCalls++
+            result.complete(RunResult(stdout = "", stderr = "stopped", elapsedMs = 0.0))
+        }
+
+        fun finish(stdout: String) {
+            result.complete(RunResult(stdout = stdout, stderr = "", elapsedMs = 1.0))
+        }
+    }
+
+    @Test
+    fun stopRun_tellsTheExecutorToStop() {
+        val executor = FakeExecutor()
+        val vm = EditorViewModel { executor }
+
+        vm.runCode("(define (f) (f)) (f)")
+        assertTrue(vm.isRunning.value)
+        vm.stopRun()
+
+        assertEquals("Stop must terminate the run, not just abandon it", 1, executor.stopCalls)
+        assertFalse(vm.isRunning.value)
+        assertEquals("Run stopped by user.", vm.lastResult.value?.stderr)
+
+        // The executor's own (post-stop) result must not replace the notice.
+        assertEquals("Run stopped by user.", vm.lastResult.value?.stderr)
+        vm.stopRun()
+        assertEquals("a second Stop has nothing left to stop", 1, executor.stopCalls)
+    }
+
+    @Test
+    fun completedRun_keepsItsResult_andALaterStopHasNothingToStop() {
+        val executor = FakeExecutor()
+        val vm = EditorViewModel { executor }
+
+        vm.runCode("(display 1)")
+        executor.finish("1")
+        awaitResult(vm)
+        // The run job's finally releases the executor exactly once (a no-op
+        // on a finished run, per the SchemeExecutor contract)...
+        assertEquals(1, executor.stopCalls)
+
+        vm.stopRun()
+
+        // ...and Stop on an idle editor neither stops again nor replaces the result.
+        assertEquals(1, executor.stopCalls)
+        assertEquals("1", vm.lastResult.value?.stdout)
+        assertFalse(vm.isRunning.value)
+    }
+
+    @Test
+    fun clearingTheViewModel_stopsAnInFlightRun() {
+        val executor = FakeExecutor()
+        val vm = EditorViewModel { executor }
+        val store = ViewModelStore().apply { put("editor", vm) }
+
+        vm.runCode("(define (f) (f)) (f)")
+        store.clear()
+
+        assertEquals("teardown must kill the runner process", 1, executor.stopCalls)
+    }
+
     @Test
     fun stopRun_unblocksUiWhileTheProgramIsStillExecuting() {
-        // The module loader blocks until we release the gate, simulating a
-        // long-running WASM execution that cannot be cooperatively cancelled.
+        // In-process SchemeRunner: its stop() is a no-op, so this covers the
+        // abandon path. The module loader blocks until we release the gate,
+        // simulating a WASM execution that cannot be cooperatively cancelled.
         val gate = CountDownLatch(1)
         val cacheDir = tmp.newFolder()
         val vm = EditorViewModel {

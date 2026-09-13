@@ -88,7 +88,7 @@ here; bugs in how Scheme code evaluates are upstream.
 | Path | Role |
 |------|------|
 | `shared/` | KMP module: domain models in `commonMain`, `expect`/`actual` `FileRepository`/`SettingsRepository` in `androidMain`/`iosMain` (user files live in `<filesDir>/schemes/` on Android, `Documents/schemes/` on iOS) |
-| `app/` | Android app: Compose UI (`ui/screens/`), ViewModels, `bridge/KaappiBridge.kt`, `runtime/SchemeRunner.kt` (Chicory JVM WASM runtime) |
+| `app/` | Android app: Compose UI (`ui/screens/`), ViewModels, `bridge/KaappiBridge.kt`, `runtime/` (Chicory JVM WASM runtime in `SchemeRunner.kt`, hosted in the `:runner` process by `SchemeRunnerService.kt`) |
 | `iosApp/` | SwiftUI app: `Bridge/SchemeWebView.swift`, ViewModels (wrapping the shared Kotlin repositories), Views, `Helpers/SharedModels.swift` (Swift conveniences for the Kotlin models), `Resources/webview/` assets |
 | `docs/` | Contributor documentation |
 | `.cursor/skills/` | Release automation playbooks (source of truth for release steps) and the `pr-groups` issue-batching skill. Exposed to ZCode via the `.zcode/skills` symlink — edit the files under `.cursor/skills/`, never the symlink |
@@ -97,9 +97,12 @@ here; bugs in how Scheme code evaluates are upstream.
 ## Execution model (why the platforms differ)
 
 - **Android:** the Play button pulls code out of the editor via
-  `window.kaappiAPI?.getCode()`, then `SchemeRunner` executes it natively with Chicory
-  on a dedicated per-run thread (not the shared `Dispatchers.IO` pool). Long programs
-  are fine; Stop only abandons a run, it cannot kill it (see `docs/architecture.md`, #24).
+  `window.kaappiAPI?.getCode()`, then `IsolatedSchemeRunner` hands it to
+  `SchemeRunnerService`, which lives in a separate `:runner` process and executes it
+  natively with Chicory (`SchemeRunner`) on a dedicated per-run thread. Long programs
+  are fine; Stop kills the `:runner` process, so runaway programs really die (see
+  `docs/architecture.md`, #24). Anything that runs Scheme on Android must go through
+  that service — Chicory itself cannot be interrupted.
 - **iOS:** the Play button calls `window.kaappiAPI?.runCode()` and the WASM runs
   **inside the WebView on its main thread** (WASI shim, no timeout). Long programs
   freeze the UI; keep iOS test programs short. `worker.js`/`runner.js` exist but are
